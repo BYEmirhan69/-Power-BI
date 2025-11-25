@@ -1,14 +1,35 @@
+"use client";
+
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar, Header } from "@/components/layout";
 import { ThemeProvider } from "@/components/providers";
 import { AuthProvider } from "@/hooks/use-auth";
 import { Toaster } from "@/components/ui/sonner";
+import { useSyncExternalStore } from "react";
+
+function useIsMounted() {
+  return useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
+}
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const mounted = useIsMounted();
+
+  if (!mounted) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
   return (
     <ThemeProvider
       attribute="class"

@@ -14,6 +14,7 @@ export type ReportFormat = "pdf" | "excel" | "csv";
 export type NotificationType = "info" | "success" | "warning" | "error";
 export type SyncStatus = "success" | "failed" | "pending";
 export type VersionOperation = "INSERT" | "UPDATE" | "DELETE";
+export type InvitationStatus = "pending" | "accepted" | "expired" | "revoked";
 
 // Versiyonlanabilir tablo isimleri
 export type VersionedTableName = "datasets" | "charts" | "dashboards" | "data_sources" | "reports";
@@ -452,6 +453,47 @@ export interface Database {
           created_at?: string;
         };
       };
+      invitations: {
+        Row: {
+          id: string;
+          organization_id: string;
+          email: string;
+          role: UserRole;
+          token: string;
+          invited_by: string;
+          status: InvitationStatus;
+          expires_at: string;
+          accepted_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          email: string;
+          role?: UserRole;
+          token?: string;
+          invited_by: string;
+          status?: InvitationStatus;
+          expires_at?: string;
+          accepted_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          organization_id?: string;
+          email?: string;
+          role?: UserRole;
+          token?: string;
+          invited_by?: string;
+          status?: InvitationStatus;
+          expires_at?: string;
+          accepted_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
       data_versions: {
         Row: {
           id: string;
@@ -553,6 +595,7 @@ export interface Database {
       notification_type: NotificationType;
       sync_status: SyncStatus;
       version_operation: VersionOperation;
+      invitation_status: InvitationStatus;
     };
   };
 }
@@ -568,6 +611,7 @@ export type DashboardChart = Database["public"]["Tables"]["dashboard_charts"]["R
 export type ActivityLog = Database["public"]["Tables"]["activity_logs"]["Row"];
 export type Report = Database["public"]["Tables"]["reports"]["Row"];
 export type Notification = Database["public"]["Tables"]["notifications"]["Row"];
+export type Invitation = Database["public"]["Tables"]["invitations"]["Row"];
 export type DataVersion = Database["public"]["Tables"]["data_versions"]["Row"];
 
 // Version history item type

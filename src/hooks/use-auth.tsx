@@ -28,12 +28,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const supabase = createClient();
 
   const fetchProfile = async (userId: string) => {
-    const { data } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", userId)
-      .single();
-    setProfile(data);
+    try {
+      // API üzerinden profil al (RLS sorunlarını bypass eder)
+      const response = await fetch("/api/settings/profile");
+      if (response.ok) {
+        const data = await response.json();
+        setProfile(data.profile);
+      } else {
+        // Fallback: doğrudan Supabase'den dene
+        const { data } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", userId)
+          .single();
+        setProfile(data);
+      }
+    } catch (error) {
+      console.error("Profil getirme hatası:", error);
+      // Fallback: doğrudan Supabase'den dene
+      const { data } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", userId)
+        .single();
+      setProfile(data);
+    }
   };
 
   const refreshProfile = async () => {

@@ -23,12 +23,19 @@ function Avatar({
 
 function AvatarImage({
   className,
+  src,
   ...props
 }: React.ComponentProps<typeof AvatarPrimitive.Image>) {
+  // Don't render if src is empty string, null, or undefined
+  if (!src) {
+    return null
+  }
+  
   return (
     <AvatarPrimitive.Image
       data-slot="avatar-image"
       className={cn("aspect-square size-full", className)}
+      src={src}
       {...props}
     />
   )

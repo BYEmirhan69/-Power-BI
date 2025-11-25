@@ -23,17 +23,28 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 
 export function UserNav() {
   const router = useRouter();
-  const { user, profile } = useAuth();
-  const supabase = createClient();
+  const { user, profile, signOut } = useAuth();
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    router.push("/auth/login");
+    try {
+      await signOut();
+      router.push("/auth/login");
+      router.refresh();
+    } catch (error) {
+      console.error("Çıkış yapılırken hata:", error);
+    }
+  };
+
+  const handleNavigateProfile = () => {
+    router.push("/dashboard/settings?tab=profile");
+  };
+
+  const handleNavigateSettings = () => {
+    router.push("/dashboard/settings");
   };
 
   const initials = profile?.full_name
@@ -100,17 +111,17 @@ export function UserNav() {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem onClick={() => router.push("/dashboard/profile")}>
+              <DropdownMenuItem onSelect={handleNavigateProfile}>
                 <User className="mr-2 h-4 w-4" />
                 Profil
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => router.push("/dashboard/settings")}>
+              <DropdownMenuItem onSelect={handleNavigateSettings}>
                 <Settings className="mr-2 h-4 w-4" />
                 Ayarlar
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleSignOut}>
+            <DropdownMenuItem onSelect={handleSignOut}>
               <LogOut className="mr-2 h-4 w-4" />
               Çıkış Yap
             </DropdownMenuItem>

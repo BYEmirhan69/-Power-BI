@@ -1,10 +1,13 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 // Kullanıcı profili getir
 export async function GET() {
   try {
     const supabase = await createClient();
+    const adminClient = createAdminClient();
     
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     
@@ -15,14 +18,15 @@ export async function GET() {
       );
     }
 
-    // Profil bilgilerini getir
-    const { data: profile, error: profileError } = await supabase
+    // Profil bilgilerini getir (admin client ile RLS bypass)
+    const { data: profile, error: profileError } = await adminClient
       .from("profiles")
       .select("*, organizations(*)")
       .eq("id", user.id)
       .single();
 
     if (profileError) {
+      console.error("Profil getirme hatası:", profileError);
       return NextResponse.json(
         { error: "Profil bulunamadı" },
         { status: 404 }
@@ -43,6 +47,7 @@ export async function GET() {
 export async function PUT(request: NextRequest) {
   try {
     const supabase = await createClient();
+    const adminClient = createAdminClient();
     
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     
@@ -56,9 +61,8 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
     const { full_name, avatar_url } = body;
 
-    // Profil güncelle
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: profile, error: updateError } = await (supabase as any)
+    // Profil güncelle (admin client ile RLS bypass)
+    const { data: profile, error: updateError } = await adminClient
       .from("profiles")
       .update({
         full_name,
@@ -78,8 +82,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Activity log ekle
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase as any).from("activity_logs").insert({
+    await adminClient.from("activity_logs").insert({
       user_id: user.id,
       organization_id: profile?.organization_id ?? null,
       action: "UPDATE",

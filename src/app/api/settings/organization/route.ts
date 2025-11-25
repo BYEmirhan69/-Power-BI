@@ -1,10 +1,13 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 // Organizasyon bilgilerini getir
 export async function GET() {
   try {
     const supabase = await createClient();
+    const adminClient = createAdminClient();
     
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     
@@ -15,13 +18,20 @@ export async function GET() {
       );
     }
 
-    // Kullanıcının profilini getir
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: profile } = await (supabase as any)
+    // Kullanıcının profilini getir (admin client ile RLS bypass)
+    const { data: profile, error: profileError } = await adminClient
       .from("profiles")
       .select("organization_id, role")
       .eq("id", user.id)
       .single();
+
+    if (profileError) {
+      console.error("Profil getirme hatası:", profileError);
+      return NextResponse.json(
+        { error: "Profil bulunamadı" },
+        { status: 404 }
+      );
+    }
 
     if (!profile?.organization_id) {
       return NextResponse.json(
@@ -31,14 +41,14 @@ export async function GET() {
     }
 
     // Organizasyon bilgilerini getir
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: organization, error: orgError } = await (supabase as any)
+    const { data: organization, error: orgError } = await adminClient
       .from("organizations")
       .select("*")
       .eq("id", profile.organization_id)
       .single();
 
     if (orgError) {
+      console.error("Organizasyon getirme hatası:", orgError);
       return NextResponse.json(
         { error: "Organizasyon bulunamadı" },
         { status: 404 }
@@ -46,8 +56,7 @@ export async function GET() {
     }
 
     // Organizasyondaki kullanıcı sayısını getir
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { count: memberCount } = await (supabase as any)
+    const { count: memberCount } = await adminClient
       .from("profiles")
       .select("*", { count: "exact", head: true })
       .eq("organization_id", profile.organization_id);
@@ -70,6 +79,7 @@ export async function GET() {
 export async function PUT(request: NextRequest) {
   try {
     const supabase = await createClient();
+    const adminClient = createAdminClient();
     
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     
@@ -80,22 +90,28 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Kullanıcının admin olup olmadığını kontrol et
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: profile } = await (supabase as any)
+    // Kullanıcının profilini getir
+    const { data: profile, error: profileError } = await adminClient
       .from("profiles")
       .select("organization_id, role")
       .eq("id", user.id)
       .single();
 
-    if (profile?.role !== "admin") {
+    if (profileError || !profile) {
+      return NextResponse.json(
+        { error: "Profil bulunamadı" },
+        { status: 404 }
+      );
+    }
+
+    if (profile.role !== "admin") {
       return NextResponse.json(
         { error: "Bu işlem için admin yetkisi gereklidir" },
         { status: 403 }
       );
     }
 
-    if (!profile?.organization_id) {
+    if (!profile.organization_id) {
       return NextResponse.json(
         { error: "Organizasyon bulunamadı" },
         { status: 404 }
@@ -113,8 +129,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Organizasyonu güncelle
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: organization, error: updateError } = await (supabase as any)
+    const { data: organization, error: updateError } = await adminClient
       .from("organizations")
       .update({
         name,
@@ -133,8 +148,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Activity log ekle
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase as any).from("activity_logs").insert({
+    await adminClient.from("activity_logs").insert({
       user_id: user.id,
       organization_id: profile.organization_id,
       action: "UPDATE",

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
@@ -37,7 +38,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+// Textarea - şu an kullanılmıyor
+// import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface NotificationSettings {
@@ -57,7 +59,11 @@ interface OrganizationData {
 
 export default function SettingsPage() {
   const { user, profile, refreshProfile, loading: authLoading } = useAuth();
-  const supabase = createClient();
+  const _supabase = createClient(); // eslint-disable-line @typescript-eslint/no-unused-vars
+  const searchParams = useSearchParams();
+  
+  // Get initial tab from URL params
+  const initialTab = searchParams.get("tab") || "profile";
 
   // Profile state
   const [fullName, setFullName] = useState("");
@@ -356,7 +362,7 @@ export default function SettingsPage() {
         </p>
       </div>
 
-      <Tabs defaultValue="profile" className="space-y-6">
+      <Tabs defaultValue={initialTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 lg:w-auto lg:inline-flex">
           <TabsTrigger value="profile" className="gap-2">
             <User className="h-4 w-4" />
