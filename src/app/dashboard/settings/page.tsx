@@ -141,25 +141,50 @@ export default function SettingsPage() {
 
   // Update profile
   const handleUpdateProfile = async () => {
+    // Validation
+    if (!fullName.trim()) {
+      toast.error("Hata", { description: "Ad Soyad alanı boş olamaz." });
+      return;
+    }
+
     setProfileLoading(true);
+    
+    // Store previous values for rollback
+    const previousName = profile?.full_name || "";
+    const previousAvatar = profile?.avatar_url || "";
+    
+    // Show immediate feedback
+    toast.loading("Profil güncelleniyor...", { id: "profile-update" });
+
     try {
       const response = await fetch("/api/settings/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ full_name: fullName, avatar_url: avatarUrl }),
+        body: JSON.stringify({ full_name: fullName.trim(), avatar_url: avatarUrl.trim() }),
       });
 
+      const data = await response.json();
+
       if (response.ok) {
-        await refreshProfile();
+        // Use the returned profile data directly instead of making another request
+        // This is faster than calling refreshProfile()
         toast.success("Profil güncellendi", {
+          id: "profile-update",
           description: "Profil bilgileriniz başarıyla kaydedildi.",
         });
+        // Refresh profile in background for global state sync
+        refreshProfile();
       } else {
-        const data = await response.json();
-        toast.error("Hata", { description: data.error });
+        // Rollback on error
+        setFullName(previousName);
+        setAvatarUrl(previousAvatar);
+        toast.error("Hata", { id: "profile-update", description: data.error || "Profil güncellenemedi." });
       }
     } catch {
-      toast.error("Hata", { description: "Profil güncellenirken bir hata oluştu." });
+      // Rollback on error
+      setFullName(previousName);
+      setAvatarUrl(previousAvatar);
+      toast.error("Hata", { id: "profile-update", description: "Profil güncellenirken bir hata oluştu." });
     } finally {
       setProfileLoading(false);
     }
@@ -167,26 +192,44 @@ export default function SettingsPage() {
 
   // Update organization
   const handleUpdateOrganization = async () => {
+    // Validation
+    if (!orgName.trim()) {
+      toast.error("Hata", { description: "Organizasyon adı boş olamaz." });
+      return;
+    }
+
     setOrgLoading(true);
+    
+    // Store previous value for rollback
+    const previousOrgName = organization?.name || "";
+    
+    // Show immediate feedback
+    toast.loading("Organizasyon güncelleniyor...", { id: "org-update" });
+
     try {
       const response = await fetch("/api/settings/organization", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: orgName }),
+        body: JSON.stringify({ name: orgName.trim() }),
       });
 
+      const data = await response.json();
+
       if (response.ok) {
-        const data = await response.json();
         setOrganization(data.organization);
         toast.success("Organizasyon güncellendi", {
+          id: "org-update",
           description: "Organizasyon bilgileri başarıyla kaydedildi.",
         });
       } else {
-        const data = await response.json();
-        toast.error("Hata", { description: data.error });
+        // Rollback on error
+        setOrgName(previousOrgName);
+        toast.error("Hata", { id: "org-update", description: data.error || "Organizasyon güncellenemedi." });
       }
     } catch {
-      toast.error("Hata", { description: "Organizasyon güncellenirken bir hata oluştu." });
+      // Rollback on error
+      setOrgName(previousOrgName);
+      toast.error("Hata", { id: "org-update", description: "Organizasyon güncellenirken bir hata oluştu." });
     } finally {
       setOrgLoading(false);
     }
@@ -204,6 +247,8 @@ export default function SettingsPage() {
     }
 
     setPasswordLoading(true);
+    toast.loading("Şifre değiştiriliyor...", { id: "password-change" });
+
     try {
       const response = await fetch("/api/settings/password", {
         method: "PUT",
@@ -215,14 +260,15 @@ export default function SettingsPage() {
         setNewPassword("");
         setConfirmPassword("");
         toast.success("Şifre değiştirildi", {
+          id: "password-change",
           description: "Şifreniz başarıyla güncellendi.",
         });
       } else {
         const data = await response.json();
-        toast.error("Hata", { description: data.error });
+        toast.error("Hata", { id: "password-change", description: data.error || "Şifre değiştirilemedi." });
       }
     } catch {
-      toast.error("Hata", { description: "Şifre değiştirilirken bir hata oluştu." });
+      toast.error("Hata", { id: "password-change", description: "Şifre değiştirilirken bir hata oluştu." });
     } finally {
       setPasswordLoading(false);
     }
@@ -233,6 +279,10 @@ export default function SettingsPage() {
     key: keyof NotificationSettings,
     value: boolean
   ) => {
+    // Store previous state for rollback
+    const previousSettings = { ...notifications };
+    
+    // Optimistic update - immediately show the change
     const updatedSettings = { ...notifications, [key]: value };
     setNotifications(updatedSettings);
 
@@ -249,12 +299,13 @@ export default function SettingsPage() {
         });
       } else {
         // Revert on error
-        setNotifications(notifications);
+        setNotifications(previousSettings);
         const data = await response.json();
-        toast.error("Hata", { description: data.error });
+        toast.error("Hata", { description: data.error || "Ayar güncellenemedi." });
       }
     } catch {
-      setNotifications(notifications);
+      // Revert on error
+      setNotifications(previousSettings);
       toast.error("Hata", { description: "Ayar güncellenirken bir hata oluştu." });
     }
   };

@@ -197,15 +197,18 @@ export class FileParserService {
     file: File,
     config: FileUploadConfig
   ): Promise<FilePreviewResult> {
-    // XLSX kütüphanesi dinamik import
-    const XLSX = await import("xlsx");
+    // ExcelJS kütüphanesi dinamik import
+    const ExcelJS = await import("exceljs");
     
     const arrayBuffer = await file.arrayBuffer();
-    const workbook = XLSX.read(arrayBuffer, { type: "array" });
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(arrayBuffer);
     
     // Sheet seç
-    const sheetName = config.sheetName || workbook.SheetNames[0];
-    const sheet = workbook.Sheets[sheetName];
+    const sheetName = config.sheetName || workbook.worksheets[0]?.name;
+    const sheet = sheetName 
+      ? workbook.getWorksheet(sheetName) 
+      : workbook.worksheets[0];
     
     if (!sheet) {
       return {
@@ -217,16 +220,35 @@ export class FileParserService {
       };
     }
 
-    // JSON'a çevir
-    const jsonData = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, {
-      header: config.hasHeader ? undefined : 1,
-      range: config.skipRows,
-      defval: null,
+    // Veriyi JSON'a çevir
+    const jsonData: Record<string, unknown>[] = [];
+    let headers: string[] = [];
+    let rowIndex = 0;
+
+    sheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+      // Skip rows
+      if (rowNumber <= config.skipRows) return;
+      
+      const rowValues = row.values as (string | number | boolean | Date | null)[];
+      // ExcelJS row.values ilk eleman undefined olur (1-indexed)
+      const values = rowValues.slice(1);
+      
+      if (config.hasHeader && rowIndex === 0) {
+        headers = values.map((v, i) => v?.toString() || `Column_${i + 1}`);
+      } else {
+        const record: Record<string, unknown> = {};
+        const headerList = headers.length > 0 ? headers : this.generateHeaders(values.length);
+        headerList.forEach((header, index) => {
+          record[header] = values[index] ?? null;
+        });
+        jsonData.push(record);
+      }
+      rowIndex++;
     });
 
     const preview = jsonData.slice(0, config.maxRows || 100);
-    const headers = preview.length > 0 ? Object.keys(preview[0]) : [];
-    const columns = this.analyzeColumns(headers, preview, config.dateFormats);
+    const finalHeaders = headers.length > 0 ? headers : (preview.length > 0 ? Object.keys(preview[0]) : []);
+    const columns = this.analyzeColumns(finalHeaders, preview, config.dateFormats);
 
     return {
       success: true,
@@ -406,16 +428,50 @@ export class FileParserService {
         };
       }
 
-      // Buffer için XLSX kullan
-      const XLSX = await import("xlsx");
-      const workbook = XLSX.read(file, { type: "array" });
-      const sheetName = config.sheetName || workbook.SheetNames[0];
-      const sheet = workbook.Sheets[sheetName];
+      // Buffer için ExcelJS kullan
+      const ExcelJS = await import("exceljs");
+      const workbook = new ExcelJS.Workbook();
       
-      const data = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, {
-        header: config.hasHeader ? undefined : 1,
-        range: config.skipRows,
-        defval: null,
+      // Buffer veya ArrayBuffer'ı ExcelJS'in beklediği formata çevir
+      const buffer = file instanceof Buffer 
+        ? file 
+        : Buffer.from(file as ArrayBuffer);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await workbook.xlsx.load(buffer as any);
+      
+      const sheetName = config.sheetName || workbook.worksheets[0]?.name;
+      const sheet = sheetName 
+        ? workbook.getWorksheet(sheetName) 
+        : workbook.worksheets[0];
+      
+      if (!sheet) {
+        return {
+          success: false,
+          error: `Sheet bulunamadı: ${sheetName}`,
+        };
+      }
+
+      const data: Record<string, unknown>[] = [];
+      let headers: string[] = [];
+      let rowIndex = 0;
+
+      sheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+        if (rowNumber <= config.skipRows) return;
+        
+        const rowValues = row.values as (string | number | boolean | Date | null)[];
+        const values = rowValues.slice(1);
+        
+        if (config.hasHeader && rowIndex === 0) {
+          headers = values.map((v, i) => v?.toString() || `Column_${i + 1}`);
+        } else {
+          const record: Record<string, unknown> = {};
+          const headerList = headers.length > 0 ? headers : this.generateHeaders(values.length);
+          headerList.forEach((header, index) => {
+            record[header] = values[index] ?? null;
+          });
+          data.push(record);
+        }
+        rowIndex++;
       });
 
       return { success: true, data };
