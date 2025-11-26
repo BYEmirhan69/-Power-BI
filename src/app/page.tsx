@@ -400,7 +400,7 @@ export default function HomePage() {
                 <span className="font-semibold">Power BI Platform</span>
               </div>
               <p className="text-sm text-muted-foreground">
-                © 2024 Power BI Platform. Tüm hakları saklıdır.
+                © {new Date().getFullYear()} Power BI Platform. Tüm hakları saklıdır.
               </p>
             </div>
           </div>

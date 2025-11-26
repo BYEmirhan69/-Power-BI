@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, useMemo } from "react";
 import { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/types/database.types";
@@ -25,12 +25,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
+  
+  const supabase = useMemo(() => createClient(), []);
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = useCallback(async (userId: string, signal?: AbortSignal) => {
     try {
       // API üzerinden profil al (RLS sorunlarını bypass eder)
-      const response = await fetch("/api/settings/profile");
+      const response = await fetch("/api/settings/profile", { signal });
       if (response.ok) {
         const data = await response.json();
         setProfile(data.profile);
@@ -44,6 +45,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setProfile(data);
       }
     } catch (error) {
+      if ((error as Error).name === "AbortError") return;
       console.error("Profil getirme hatası:", error);
       // Fallback: doğrudan Supabase'den dene
       const { data } = await supabase
@@ -53,22 +55,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .single();
       setProfile(data);
     }
-  };
+  }, [supabase]);
 
-  const refreshProfile = async () => {
+  const refreshProfile = useCallback(async () => {
     if (user?.id) {
       // Non-blocking profile refresh
       fetchProfile(user.id).catch(console.error);
     }
-  };
+  }, [user?.id, fetchProfile]);
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     await supabase.auth.signOut();
     setUser(null);
     setProfile(null);
-  };
+  }, [supabase]);
 
   useEffect(() => {
+    const abortController = new AbortController();
+    
     const getUser = async () => {
       const {
         data: { user },
@@ -76,7 +80,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (user) {
         setUser(user);
-        await fetchProfile(user.id);
+        await fetchProfile(user.id, abortController.signal);
       }
       setLoading(false);
     };
@@ -88,7 +92,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
         setUser(session.user);
-        await fetchProfile(session.user.id);
+        await fetchProfile(session.user.id, abortController.signal);
       } else {
         setUser(null);
         setProfile(null);
@@ -97,15 +101,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => {
+      abortController.abort();
       subscription.unsubscribe();
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [supabase, fetchProfile]);
+
+  const value = useMemo(
+    () => ({ user, profile, loading, signOut, refreshProfile }),
+    [user, profile, loading, signOut, refreshProfile]
+  );
 
   return (
-    <AuthContext.Provider
-      value={{ user, profile, loading, signOut, refreshProfile }}
-    >
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

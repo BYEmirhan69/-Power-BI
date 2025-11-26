@@ -494,6 +494,32 @@ export interface Database {
           updated_at?: string;
         };
       };
+      organization_members: {
+        Row: {
+          id: string;
+          organization_id: string;
+          user_id: string;
+          role: UserRole;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          user_id: string;
+          role?: UserRole;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          organization_id?: string;
+          user_id?: string;
+          role?: UserRole;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
       data_versions: {
         Row: {
           id: string;
@@ -613,6 +639,7 @@ export type Report = Database["public"]["Tables"]["reports"]["Row"];
 export type Notification = Database["public"]["Tables"]["notifications"]["Row"];
 export type Invitation = Database["public"]["Tables"]["invitations"]["Row"];
 export type DataVersion = Database["public"]["Tables"]["data_versions"]["Row"];
+export type OrganizationMember = Database["public"]["Tables"]["organization_members"]["Row"];
 
 // Version history item type
 export interface VersionHistoryItem {

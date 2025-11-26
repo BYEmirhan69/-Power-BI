@@ -12,7 +12,6 @@ import {
   Settings,
   Upload,
   Users,
-  Bell,
   FileText,
   Activity,
 } from "lucide-react";
@@ -86,11 +85,6 @@ const adminNavItems = [
     title: "Kullanıcılar",
     url: "/dashboard/users",
     icon: Users,
-  },
-  {
-    title: "Bildirimler",
-    url: "/dashboard/notifications",
-    icon: Bell,
   },
   {
     title: "Ayarlar",

@@ -577,11 +577,13 @@ export class ValidationPipeline {
       const newRow = { ...row, __hasOutlier: false };
       for (const col of numericColumns) {
         const value = row[col];
-        if (typeof value === "number" && bounds[col]) {
-          if (value < bounds[col].lower || value > bounds[col].upper) {
-            newRow.__hasOutlier = true;
-            totalRemoved++;
-          }
+        if (
+          typeof value === "number" &&
+          bounds[col] &&
+          (value < bounds[col].lower || value > bounds[col].upper)
+        ) {
+          newRow.__hasOutlier = true;
+          totalRemoved++;
         }
       }
       return newRow;

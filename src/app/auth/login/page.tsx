@@ -71,7 +71,8 @@ export default function LoginPage() {
 
       router.push("/dashboard");
       router.refresh();
-    } catch (error) {
+    } catch (err) {
+      console.error("Login error:", err);
       toast.error("Bir hata oluştu", {
         description: "Lütfen tekrar deneyin",
       });

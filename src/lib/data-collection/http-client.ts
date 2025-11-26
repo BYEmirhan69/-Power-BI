@@ -9,6 +9,9 @@ import {
   AuthConfig,
 } from "@/types/data-collection.types";
 
+// Rate limiting için basit bir store
+const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
+
 export class HttpClient {
   private defaultHeaders: Record<string, string> = {
     "Content-Type": "application/json",
@@ -16,11 +19,41 @@ export class HttpClient {
   };
 
   /**
+   * Rate limiting kontrolü yapar
+   */
+  private checkRateLimit(url: string, maxRequests = 100, windowMs = 60000): boolean {
+    const domain = new URL(url).hostname;
+    const now = Date.now();
+    const entry = rateLimitStore.get(domain);
+
+    if (!entry || now > entry.resetTime) {
+      rateLimitStore.set(domain, { count: 1, resetTime: now + windowMs });
+      return true;
+    }
+
+    if (entry.count >= maxRequests) {
+      return false;
+    }
+
+    entry.count++;
+    return true;
+  }
+
+  /**
    * API isteği gönderir
    */
   async request<T = unknown>(config: ApiRequestConfig): Promise<ApiResponse<T>> {
     const startTime = Date.now();
     let lastError: Error | null = null;
+
+    // Rate limit kontrolü
+    if (!this.checkRateLimit(config.url)) {
+      return {
+        success: false,
+        error: "Rate limit aşıldı. Lütfen bekleyin.",
+        duration: Date.now() - startTime,
+      };
+    }
 
     for (let attempt = 0; attempt <= config.retryCount; attempt++) {
       try {
