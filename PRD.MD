@@ -1,4 +1,4 @@
-Harika bir proje vizyonu Mikail! Aşağıda, iş zekası platformunuz için detaylı bir prd.md (Product Requirements Document) taslağı hazırladım. Her adımın başına [ ] işareti ekledim ve senin öngörmediğin ama sistemin sürdürülebilirliği, ölçeklenebilirliği ve kullanıcı deneyimi açısından kritik olabilecek bazı özellikleri de ekledim.
+Harika bir proje vizyonu Emirhan Aşağıda, iş zekası platformunuz için detaylı bir prd.md (Product Requirements Document) taslağı hazırladım. Her adımın başına [ ] işareti ekledim ve senin öngörmediğin ama sistemin sürdürülebilirliği, ölçeklenebilirliği ve kullanıcı deneyimi açısından kritik olabilecek bazı özellikleri de ekledim.
 
 ---
 
@@ -143,6 +143,107 @@ Harika bir proje vizyonu Mikail! Aşağıda, iş zekası platformunuz için deta
 
 ---
 
-Bu PRD, sistemin modülerliğini, veri akışını ve kullanıcı deneyimini ön planda tutarak uzun vadeli sürdürülebilirlik için optimize edildi. İstersen bu dokümana versiyonlama, test senaryoları veya teknik mimari diyagramları da ekleyebilirim.
+📌 Ek Bileşenler ve Sonradan Eklenen Gereksinimler
+🔶 1. İkinci Veritabanı: MongoDB Atlas Entegrasyonu
 
-Hazır olduğunda bir sonraki adım olarak teknik mimariyi veya ilk MVP kapsamını çıkarabiliriz. Ne dersin?
+Bu projede hocanın gereksinimi doğrultusunda ilişkisel Supabase veritabanına ek olarak NoSQL tabanlı MongoDB Atlas entegre edilmiştir.
+
+Kullanım Amacı
+
+Scraping sonrası elde edilen ham JSON verilerinin saklanması
+
+CSV/XLSX ile yüklenen dosyaların işlenmemiş halinin depolanması
+
+Veri işleme pipeline’ında oluşan hata ve uyarı loglarının saklanması
+
+Büyük hacimli, şema gerektirmeyen doküman tabanlı verilerin tutulması
+
+Veri gölü (data lake) yapısı ile normalize edilmemiş verinin saklanması
+
+Mimari Rolü
+
+MongoDB → Raw Data Layer (ham veri, loglar, event stream)
+
+Supabase → Processed Data Layer (analiz verisi, kullanıcı verisi, grafik metrikleri, rapor kayıtları)
+
+Bu yapı, projeye hibrit veritabanı mimarisi kazandırarak hem esneklik hem de performans sağlar.
+
+🔶 2. Veri Pipeline Güncellemesi (Raw → Processed)
+
+Platformun veri akışı ikinci veritabanı eklentisiyle birlikte aşağıdaki yeniden tanımlanmış süreçten oluşur:
+
+Kaynaklar:
+
+Web scraping
+
+REST API entegrasyonları
+
+CSV/XLSX dosya yüklemeleri
+
+Ham Veri Depolama:
+
+Elde edilen tüm ham sonuçlar MongoDB Atlas üzerinde raw_scraping_results koleksiyonunda saklanır.
+
+Hata, uyarı, request/response gibi event tabanlı loglar yine MongoDB'de kayıt altına alınır.
+
+Pipeline İşleme:
+
+ValidationPipeline ham veriyi doğrular, temizler ve sınıflandırır.
+
+Normalize Edilmiş Çıktı:
+
+Temizlenmiş veri Supabase üzerinde analitik tablolara yazılır.
+
+Görselleştirme:
+
+Dashboard, grafikler ve raporlama işlemleri Supabase’teki işlenmiş veri üzerinden çalışır.
+
+🔶 3. Loglama Mimarisi Genişletmesi
+
+Yeni log yapısı:
+
+Log Tipi	Saklandığı Yer	Açıklama
+Scraping logları	MongoDB Atlas	Ham event, hata detayı, açıklama, request/response
+Cron/Scheduler logları	MongoDB Atlas	Zamanlanmış görevlerin geçmişi
+Kullanıcı aktiviteleri	Supabase	activity_logs tablosu
+Raporlama logları	Supabase	PDF/Excel çıktılarının geçmişi
+
+Bu çift katmanlı loglama altyapısı hem detaylı analiz hem de performans odaklı özet raporlama imkânı sağlar.
+
+🔶 4. Performans ve Ölçeklenebilirlik İyileştirmeleri
+
+Ham veri Supabase yerine MongoDB’de tutulduğu için ilişkisel veritabanı sorguları daha hızlı ve stabil çalışır.
+
+MongoDB’nin doküman tabanlı yapısı sayesinde büyük JSON verileri için yatay ölçeklenebilirlik elde edilir.
+
+Pipeline iki katmanda çalıştığı için veri işleme süreçleri ayrışır ve daha yönetilebilir hale gelir.
+
+🔶 5. Güvenlik Katmanı Güncellemeleri
+
+MongoDB Atlas bağlantıları TLS şifreleme ve IP allowlist ile korunur.
+
+Supabase tarafında RLS (Row Level Security) + JWT tabanlı kullanıcı doğrulama sürdürülür.
+
+Her iki veritabanı için erişim kimlikleri birbirinden tamamen izole edilmiştir, böylece yetki ihlalleri minimize edilir.
+
+🔶 6. Genişletilmiş Sistem Mimarisi Diyagramı
+       [Scraping / API Entegrasyonları / Dosya Yükleme]
+                             │
+                             ▼
+           [MongoDB Atlas — Raw Data & Logs Layer]
+                             │
+                     Validation Pipeline
+                             │
+                             ▼
+            [Supabase — Processed/Analytics Data Layer]
+                             │
+                             ▼
+                [Dashboard · Grafikler · Raporlama]
+
+🔶 7. Bu Ek Bileşenin PRD’ye Katkısı
+
+Projenin “iki veritabanı kullanma” gereksinimini karşılar.
+
+Gerçek bir BI platformuna uygun data lake + data warehouse mimarisi sağlar.
+
+Büyük veri, loglama ve esneklik konularında uzun vadeli ölçeklenebilirlik sunar.
