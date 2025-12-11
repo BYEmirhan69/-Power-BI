@@ -3,7 +3,7 @@
  * Yüklenen dosyadan önizleme alır
  */
 
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { fileParserService } from "@/lib/data-collection";
 import { FileUploadConfigSchema } from "@/types/data-collection.types";
 import { createClient } from "@/lib/supabase/server";

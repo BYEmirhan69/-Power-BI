@@ -3,13 +3,13 @@
  * Otomatik veri sınıflandırma - Rule-based + Heuristic
  */
 
-import { DataCategory } from "@/types/database.types";
+import { type DataCategory } from "@/types/database.types";
 import {
-  ClassificationResult,
-  ColumnClassification,
-  DetectedPattern,
-  SemanticType,
-  ColumnInfo,
+  type ClassificationResult,
+  type ColumnClassification,
+  type DetectedPattern,
+  type SemanticType,
+  type ColumnInfo,
 } from "@/types/data-collection.types";
 
 // Kolon ismi pattern'leri

@@ -3,7 +3,7 @@
  * Ham scraping sonuçlarını MongoDB'de saklayan repository
  */
 
-import { ObjectId, Collection, WithId, Filter, Sort } from "mongodb";
+import { ObjectId, type Collection, type WithId, type Filter, type Sort } from "mongodb";
 import { getMongoDb } from "./client";
 
 /**

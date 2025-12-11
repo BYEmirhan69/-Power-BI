@@ -4,12 +4,12 @@
  */
 
 import {
-  ValidationResult,
-  ValidationIssue,
-  ValidationRule,
-  CleaningOptions,
+  type ValidationResult,
+  type ValidationIssue,
+  type ValidationRule,
+  type CleaningOptions,
   ValidationSeverity,
-  ColumnInfo,
+  type ColumnInfo,
 } from "@/types/data-collection.types";
 
 export class ValidationPipeline {

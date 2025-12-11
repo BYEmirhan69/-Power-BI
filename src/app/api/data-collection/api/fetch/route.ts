@@ -3,7 +3,7 @@
  * Harici API'den veri çeker
  */
 
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { httpClient } from "@/lib/data-collection";
 import { ApiRequestConfigSchema } from "@/types/data-collection.types";
 import { createClient } from "@/lib/supabase/server";

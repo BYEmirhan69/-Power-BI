@@ -3,7 +3,7 @@
  * Web sayfalarından veri çeker
  */
 
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { scrapingService } from "@/lib/data-collection";
 import { ScrapingConfigSchema } from "@/types/data-collection.types";
 import { createClient } from "@/lib/supabase/server";

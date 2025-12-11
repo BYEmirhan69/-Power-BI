@@ -103,6 +103,7 @@ interface MiniChartProps {
   /** Yükseklik (px) */
   height?: number;
   /** Özel config varsa */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   config?: any;
 }
 
@@ -110,7 +111,7 @@ export function MiniChart({ type, chartId, height = 120, config }: MiniChartProp
   const { theme } = useTheme();
   const isDark = theme === "dark";
 
-  // Seed hesapla - chartId varsa hash'le, yoksa rastgele
+  // Seed hesapla - chartId varsa hash'le, yoksa sabit değer kullan
   const seed = useMemo(() => {
     if (chartId) {
       let hash = 0;
@@ -120,7 +121,8 @@ export function MiniChart({ type, chartId, height = 120, config }: MiniChartProp
       }
       return Math.abs(hash);
     }
-    return Math.floor(Math.random() * 1000);
+    // Sabit seed değeri (Math.random yerine)
+    return 42;
   }, [chartId]);
 
   // Veri oluştur
@@ -128,6 +130,7 @@ export function MiniChart({ type, chartId, height = 120, config }: MiniChartProp
   const labels = useMemo(() => getLabels(type), [type]);
 
   // Ortak seçenekler
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const baseOptions: ChartOptions<any> = {
     responsive: true,
     maintainAspectRatio: false,

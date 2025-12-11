@@ -59,7 +59,7 @@ interface OrganizationData {
 
 export default function SettingsPage() {
   const { user, profile, refreshProfile, loading: authLoading } = useAuth();
-  const _supabase = createClient(); // eslint-disable-line @typescript-eslint/no-unused-vars
+  const _supabase = createClient();  
   const searchParams = useSearchParams();
   
   // Get initial tab from URL params

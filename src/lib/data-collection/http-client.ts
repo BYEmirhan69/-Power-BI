@@ -4,9 +4,9 @@
  */
 
 import {
-  ApiRequestConfig,
-  ApiResponse,
-  AuthConfig,
+  type ApiRequestConfig,
+  type ApiResponse,
+  type AuthConfig,
 } from "@/types/data-collection.types";
 
 // Rate limiting için basit bir store

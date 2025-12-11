@@ -6,9 +6,9 @@
 import * as cheerio from "cheerio";
 import type { CheerioAPI } from "cheerio";
 import {
-  ScrapingConfig,
-  ScrapingResult,
-  ScrapingSelector,
+  type ScrapingConfig,
+  type ScrapingResult,
+  type ScrapingSelector,
 } from "@/types/data-collection.types";
 
 // Cheerio element tip tanımı

@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, useCallback, useMemo } from "react";
-import { User } from "@supabase/supabase-js";
+import { type User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/types/database.types";
 
@@ -62,7 +62,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Non-blocking profile refresh
       fetchProfile(user.id).catch(console.error);
     }
-  }, [user?.id, fetchProfile]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();

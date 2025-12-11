@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { DataCategory, DataSourceType } from "./database.types";
+import { type DataCategory, type DataSourceType } from "./database.types";
 
 // ============================================
 // API Entegrasyonu Tipleri
@@ -391,3 +391,52 @@ export const ScheduleConfigSchema = z.object({
   maxRetries: z.number().min(0).max(10).default(3),
 });
 export type ScheduleConfig = z.infer<typeof ScheduleConfigSchema>;
+
+// ============================================
+// AI Normalizasyon Tipleri
+// ============================================
+
+export const NormalizationChangeTypeSchema = z.enum([
+  "column_rename",
+  "value_fix",
+  "format_standardize",
+  "null_handle",
+  "encoding_fix",
+  "duplicate_remove",
+]);
+export type NormalizationChangeType = z.infer<typeof NormalizationChangeTypeSchema>;
+
+export interface AINormalizationChange {
+  type: NormalizationChangeType;
+  description: string;
+  affectedRows?: number;
+  before?: string;
+  after?: string;
+}
+
+export interface AINormalizationResult {
+  success: boolean;
+  normalizedData?: Record<string, unknown>[];
+  normalizedColumns?: ColumnInfo[];
+  changes?: AINormalizationChange[];
+  error?: string;
+  processingTime?: number;
+}
+
+export interface AINormalizationOptions {
+  targetDateFormat?: string;
+  numberLocale?: "tr-TR" | "en-US" | "de-DE";
+  nullHandling?: "keep" | "empty" | "null" | "remove";
+  normalizeColumnNames?: boolean;
+  fixInconsistentValues?: boolean;
+  fixEncodingIssues?: boolean;
+  trimWhitespace?: boolean;
+  customRules?: string[];
+}
+
+export interface AIAnalysisResult {
+  success: boolean;
+  issues: string[];
+  needsAINormalization: boolean;
+  issueCount: number;
+}

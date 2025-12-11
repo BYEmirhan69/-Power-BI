@@ -5,10 +5,10 @@
  */
 
 import {
-  FileUploadConfig,
-  FilePreviewResult,
-  ColumnInfo,
-  FileType,
+  type FileUploadConfig,
+  type FilePreviewResult,
+  type ColumnInfo,
+  type FileType,
 } from "@/types/data-collection.types";
 
 export class FileParserService {

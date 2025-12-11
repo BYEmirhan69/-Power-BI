@@ -233,9 +233,10 @@ export default function ReportsPage() {
       setCreateDialogOpen(false);
       resetForm();
       fetchReports();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error as Error;
       console.error("Rapor oluşturulurken hata:", error);
-      toast.error(error.message || "Rapor oluşturulamadı");
+      toast.error(err.message || "Rapor oluşturulamadı");
     } finally {
       setActionLoading(false);
     }
@@ -274,9 +275,10 @@ export default function ReportsPage() {
       setEditDialogOpen(false);
       resetForm();
       fetchReports();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error as Error;
       console.error("Rapor güncellenirken hata:", error);
-      toast.error(error.message || "Rapor güncellenemedi");
+      toast.error(err.message || "Rapor güncellenemedi");
     } finally {
       setActionLoading(false);
     }
@@ -302,9 +304,10 @@ export default function ReportsPage() {
       setDeleteDialogOpen(false);
       setSelectedReport(null);
       fetchReports();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error as Error;
       console.error("Rapor silinirken hata:", error);
-      toast.error(error.message || "Rapor silinemedi");
+      toast.error(err.message || "Rapor silinemedi");
     } finally {
       setActionLoading(false);
     }
@@ -326,9 +329,10 @@ export default function ReportsPage() {
 
       toast.success("Rapor başarıyla oluşturuldu");
       fetchReports();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error as Error;
       console.error("Rapor üretilirken hata:", error);
-      toast.error(error.message || "Rapor üretilemedi");
+      toast.error(err.message || "Rapor üretilemedi");
     } finally {
       setActionLoading(false);
     }

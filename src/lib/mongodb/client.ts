@@ -3,7 +3,7 @@
  * Development ortamında hot-reload sırasında yeniden bağlantı açmamak için global cache kullanır.
  */
 
-import { MongoClient, Db } from "mongodb";
+import { MongoClient, type Db } from "mongodb";
 
 if (!process.env.MONGODB_URI) {
   throw new Error("MONGODB_URI ortam değişkeni tanımlı değil");
@@ -26,7 +26,7 @@ const options = {
 
 // Global cache tipi tanımı
 declare global {
-  // eslint-disable-next-line no-var
+   
   var _mongoClientPromise: Promise<MongoClient> | undefined;
 }
 

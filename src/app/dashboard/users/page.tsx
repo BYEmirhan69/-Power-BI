@@ -111,7 +111,7 @@ const statusColors: Record<InvitationStatus, string> = {
 
 export default function UsersPage() {
   const { user, profile, loading: authLoading } = useAuth();
-  const _supabase = createClient(); // eslint-disable-line @typescript-eslint/no-unused-vars
+  const _supabase = createClient();  
 
   // State
   const [users, setUsers] = useState<Profile[]>([]);

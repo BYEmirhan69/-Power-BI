@@ -3,7 +3,7 @@
  * Veriyi doğrular ve temizler
  */
 
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { validationPipeline, classificationService } from "@/lib/data-collection";
 import { CleaningOptionsSchema } from "@/types/data-collection.types";
 import { createClient } from "@/lib/supabase/server";

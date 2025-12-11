@@ -3,7 +3,7 @@
  * URL'in scraping için uygunluğunu test eder
  */
 
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { scrapingService } from "@/lib/data-collection";
 import { createClient } from "@/lib/supabase/server";
 
