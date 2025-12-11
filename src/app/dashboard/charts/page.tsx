@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { 
   BarChart3, 
   LineChart, 
@@ -28,6 +28,7 @@ import {
   Check
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { MiniChart } from "@/components/charts/mini-chart";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -57,6 +58,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AlertCircle, Database } from "lucide-react";
 import { toast } from "sonner";
 
 // Grafik türleri
@@ -119,6 +122,7 @@ export default function ChartsPage() {
     type: "bar" as ChartType,
     dataset_id: "",
     is_public: false,
+    hasDataset: false,
   });
   
   // Embed states
@@ -355,6 +359,7 @@ export default function ChartsPage() {
       type: "bar",
       dataset_id: "",
       is_public: false,
+      hasDataset: false,
     });
   };
 
@@ -366,6 +371,7 @@ export default function ChartsPage() {
       type: chart.type,
       dataset_id: chart.dataset_id || "",
       is_public: chart.is_public,
+      hasDataset: !!chart.dataset_id,
     });
     setEditDialogOpen(true);
   };
@@ -568,8 +574,8 @@ export default function ChartsPage() {
                       {chart.description}
                     </p>
                   )}
-                  <div className="flex h-32 items-center justify-center rounded-lg bg-muted/50 mb-3">
-                    <IconComponent className="h-12 w-12 text-muted-foreground/50" />
+                  <div className="h-32 rounded-lg bg-muted/30 mb-3 overflow-hidden p-2">
+                    <MiniChart type={chart.type} chartId={chart.id} height={112} />
                   </div>
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <div className="flex items-center gap-3">
@@ -691,7 +697,7 @@ export default function ChartsPage() {
 
       {/* Create Dialog */}
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[550px]">
           <DialogHeader>
             <DialogTitle>Yeni Grafik Oluştur</DialogTitle>
             <DialogDescription>
@@ -740,23 +746,71 @@ export default function ChartsPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Veri Seti</Label>
-              <Select 
-                value={formData.dataset_id || "none"} 
-                onValueChange={(value) => setFormData({ ...formData, dataset_id: value === "none" ? "" : value })}
+              <Label>Veri Kaynağı</Label>
+              <Tabs 
+                value={formData.hasDataset ? "with-dataset" : "no-dataset"} 
+                onValueChange={(value) => {
+                  if (value === "no-dataset") {
+                    setFormData({ ...formData, hasDataset: false, dataset_id: "" });
+                  } else {
+                    setFormData({ ...formData, hasDataset: true });
+                  }
+                }}
+                className="w-full"
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Veri seti seçin (isteğe bağlı)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Veri seti yok</SelectItem>
-                  {datasets.map((dataset) => (
-                    <SelectItem key={dataset.id} value={dataset.id}>
-                      {dataset.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="no-dataset" className="flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    Veri Seti Yok
+                  </TabsTrigger>
+                  <TabsTrigger value="with-dataset" className="flex items-center gap-1">
+                    <Database className="h-3 w-3" />
+                    Veri Seti Var
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent value="no-dataset" className="mt-3">
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950 p-3">
+                    <div className="flex items-start gap-2">
+                      <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5" />
+                      <div className="text-sm">
+                        <p className="font-medium text-amber-800 dark:text-amber-200">Manuel Veri Girişi</p>
+                        <p className="text-amber-700 dark:text-amber-300 mt-1">
+                          Grafik oluşturulduktan sonra verileri manuel olarak girebilir veya daha sonra bir veri seti bağlayabilirsiniz.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </TabsContent>
+                <TabsContent value="with-dataset" className="mt-3">
+                  {datasets.length === 0 ? (
+                    <div className="rounded-lg border border-muted p-3 text-center">
+                      <Database className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                      <p className="text-sm text-muted-foreground">
+                        Henüz veri seti oluşturulmamış. Önce bir veri seti oluşturun.
+                      </p>
+                    </div>
+                  ) : (
+                    <Select 
+                      value={formData.dataset_id || ""} 
+                      onValueChange={(value) => setFormData({ ...formData, dataset_id: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Bir veri seti seçin" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {datasets.map((dataset) => (
+                          <SelectItem key={dataset.id} value={dataset.id}>
+                            <div className="flex items-center gap-2">
+                              <Database className="h-4 w-4" />
+                              {dataset.name}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </TabsContent>
+              </Tabs>
             </div>
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
@@ -782,7 +836,7 @@ export default function ChartsPage() {
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[550px]">
           <DialogHeader>
             <DialogTitle>Grafiği Düzenle</DialogTitle>
             <DialogDescription>
@@ -831,23 +885,71 @@ export default function ChartsPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Veri Seti</Label>
-              <Select 
-                value={formData.dataset_id || "none"} 
-                onValueChange={(value) => setFormData({ ...formData, dataset_id: value === "none" ? "" : value })}
+              <Label>Veri Kaynağı</Label>
+              <Tabs 
+                value={formData.hasDataset ? "with-dataset" : "no-dataset"} 
+                onValueChange={(value) => {
+                  if (value === "no-dataset") {
+                    setFormData({ ...formData, hasDataset: false, dataset_id: "" });
+                  } else {
+                    setFormData({ ...formData, hasDataset: true });
+                  }
+                }}
+                className="w-full"
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Veri seti seçin (isteğe bağlı)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Veri seti yok</SelectItem>
-                  {datasets.map((dataset) => (
-                    <SelectItem key={dataset.id} value={dataset.id}>
-                      {dataset.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="no-dataset" className="flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    Veri Seti Yok
+                  </TabsTrigger>
+                  <TabsTrigger value="with-dataset" className="flex items-center gap-1">
+                    <Database className="h-3 w-3" />
+                    Veri Seti Var
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent value="no-dataset" className="mt-3">
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950 p-3">
+                    <div className="flex items-start gap-2">
+                      <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5" />
+                      <div className="text-sm">
+                        <p className="font-medium text-amber-800 dark:text-amber-200">Manuel Veri Girişi</p>
+                        <p className="text-amber-700 dark:text-amber-300 mt-1">
+                          Grafik verilerini manuel olarak girebilir veya daha sonra bir veri seti bağlayabilirsiniz.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </TabsContent>
+                <TabsContent value="with-dataset" className="mt-3">
+                  {datasets.length === 0 ? (
+                    <div className="rounded-lg border border-muted p-3 text-center">
+                      <Database className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                      <p className="text-sm text-muted-foreground">
+                        Henüz veri seti oluşturulmamış. Önce bir veri seti oluşturun.
+                      </p>
+                    </div>
+                  ) : (
+                    <Select 
+                      value={formData.dataset_id || ""} 
+                      onValueChange={(value) => setFormData({ ...formData, dataset_id: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Bir veri seti seçin" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {datasets.map((dataset) => (
+                          <SelectItem key={dataset.id} value={dataset.id}>
+                            <div className="flex items-center gap-2">
+                              <Database className="h-4 w-4" />
+                              {dataset.name}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </TabsContent>
+              </Tabs>
             </div>
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">

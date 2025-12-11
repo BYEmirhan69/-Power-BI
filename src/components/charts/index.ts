@@ -7,3 +7,8 @@ export * from "./heatmap-chart";
 export * from "./radar-chart";
 export * from "./chart-container";
 export * from "./embed-generator";
+
+// Chart.js + Supabase entegrasyonu
+export * from "./supabase-charts";
+export * from "./realtime-chart-demo";
+export * from "./mini-chart";

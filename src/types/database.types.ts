@@ -184,7 +184,7 @@ export interface Database {
         Row: {
           id: string;
           organization_id: string;
-          dataset_id: string;
+          dataset_id: string | null;
           created_by: string;
           name: string;
           description: string | null;
@@ -203,12 +203,12 @@ export interface Database {
         Insert: {
           id?: string;
           organization_id: string;
-          dataset_id: string;
+          dataset_id?: string | null;
           created_by: string;
           name: string;
           description?: string | null;
           type: ChartType;
-          config: Json;
+          config?: Json;
           filters?: Json | null;
           is_public?: boolean;
           embed_token?: string | null;

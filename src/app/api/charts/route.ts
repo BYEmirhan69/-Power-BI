@@ -129,21 +129,28 @@ export async function POST(request: NextRequest) {
     // Embed token oluştur
     const embedToken = crypto.randomUUID();
 
+    // Insert objesi hazırla
+    const insertData: Record<string, unknown> = {
+      organization_id: profile.organization_id,
+      created_by: user.id,
+      name,
+      description: description || null,
+      type,
+      config: config || {},
+      filters: filters || {},
+      is_public: is_public || false,
+      embed_token: embedToken,
+      view_count: 0,
+    };
+
+    // dataset_id sadece varsa ekle (veritabanında NOT NULL constraint varsa sorun olmasın)
+    if (dataset_id) {
+      insertData.dataset_id = dataset_id;
+    }
+
     const { data: chartData, error } = await adminClient
       .from("charts")
-      .insert({
-        organization_id: profile.organization_id,
-        created_by: user.id,
-        name,
-        description: description || null,
-        type,
-        dataset_id: dataset_id || null,
-        config: config || {},
-        filters: filters || {},
-        is_public: is_public || false,
-        embed_token: embedToken,
-        view_count: 0,
-      } as any)
+      .insert(insertData as any)
       .select()
       .single();
 
@@ -151,8 +158,9 @@ export async function POST(request: NextRequest) {
 
     if (error || !chart) {
       console.error("Chart create error:", error);
+      console.error("Error details:", JSON.stringify(error, null, 2));
       return NextResponse.json(
-        { error: "Grafik oluşturulurken hata oluştu" },
+        { error: error?.message || "Grafik oluşturulurken hata oluştu", details: error },
         { status: 500 }
       );
     }
