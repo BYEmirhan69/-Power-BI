@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * API Route: File Preview
  * Yüklenen dosyadan önizleme alır
@@ -11,7 +12,7 @@ import { createClient } from "@/lib/supabase/server";
 export async function POST(request: NextRequest) {
   try {
     // Auth kontrolü
-    const supabase = await createClient();
+    const supabase = await createClient() as any;
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
@@ -61,9 +62,5 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Dosya boyutu limiti
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
+// Next.js 13+ App Router otomatik olarak streaming destekler
+// Eski config artık gerekli değil

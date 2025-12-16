@@ -1,4 +1,4 @@
- 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { type NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
@@ -9,7 +9,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const supabase = await createClient();
+    const supabase = await createClient() as any;
 
     const {
       data: { user },
@@ -65,7 +65,7 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params;
-    const supabase = await createClient();
+    const supabase = await createClient() as any;
     const body = await request.json();
     const { role } = body;
 
@@ -169,7 +169,7 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const supabase = await createClient();
+    const supabase = await createClient() as any;
 
     const {
       data: { user },

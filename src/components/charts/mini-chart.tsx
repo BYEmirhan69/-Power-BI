@@ -19,7 +19,7 @@ import {
   type ChartData,
   type ChartOptions,
 } from "chart.js";
-import { Bar, Line, Pie, Doughnut, Radar, PolarArea } from "react-chartjs-2";
+import { Bar, Line, Pie, Doughnut as _Doughnut, Radar, PolarArea as _PolarArea } from "react-chartjs-2";
 import { useTheme } from "next-themes";
 
 // Chart.js bileşenlerini kaydet
@@ -105,9 +105,13 @@ interface MiniChartProps {
   /** Özel config varsa */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   config?: any;
+  /** Özel veri (isteğe bağlı) */
+  data?: number[];
+  /** Özel etiketler (isteğe bağlı) */
+  labels?: string[];
 }
 
-export function MiniChart({ type, chartId, height = 120, config }: MiniChartProps) {
+export function MiniChart({ type, chartId, height = 120, config: _config, data: customData, labels: customLabels }: MiniChartProps) {
   const { theme } = useTheme();
   const isDark = theme === "dark";
 
@@ -125,9 +129,9 @@ export function MiniChart({ type, chartId, height = 120, config }: MiniChartProp
     return 42;
   }, [chartId]);
 
-  // Veri oluştur
-  const sampleData = useMemo(() => generateSampleData(type, seed), [type, seed]);
-  const labels = useMemo(() => getLabels(type), [type]);
+  // Veri oluştur - özel veri varsa onu kullan
+  const sampleData = useMemo(() => customData || generateSampleData(type, seed), [type, seed, customData]);
+  const labels = useMemo(() => customLabels || getLabels(type), [type, customLabels]);
 
   // Ortak seçenekler
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

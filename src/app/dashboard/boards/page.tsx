@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
+import { useBoards } from "@/hooks/use-swr-data";
+import { useDebounce } from "@/hooks/use-debounce";
 import { toast } from "sonner";
 import {
   LayoutDashboard,
@@ -18,7 +20,7 @@ import {
   Lock,
   Star,
   Clock,
-  Users,
+  Users as _Users,
   BarChart3,
   ArrowUpDown,
   Grid3X3,
@@ -83,7 +85,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs as _Tabs, TabsContent as _TabsContent, TabsList as _TabsList, TabsTrigger as _TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
@@ -94,14 +96,14 @@ interface BoardWithRelations extends Dashboard {
   dashboard_charts?: DashboardChart[] | null;
 }
 
-interface BoardStats {
+interface _BoardStats {
   total: number;
   public: number;
   private: number;
   default: number;
 }
 
-interface Pagination {
+interface _Pagination {
   page: number;
   limit: number;
   total: number;
@@ -122,26 +124,34 @@ const refreshOptions = [
 export default function BoardsPage() {
   const { profile, loading: authLoading } = useAuth();
 
-  // State
-  const [boards, setBoards] = useState<BoardWithRelations[]>([]);
-  const [stats, setStats] = useState<BoardStats>({
-    total: 0,
-    public: 0,
-    private: 0,
-    default: 0,
-  });
-  const [pagination, setPagination] = useState<Pagination>({
-    page: 1,
-    limit: 20,
-    total: 0,
-    totalPages: 0,
-  });
-  const [loading, setLoading] = useState(true);
+  // Filter and sort states
   const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearch = useDebounce(searchQuery, 300);
   const [visibilityFilter, setVisibilityFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("updated_at");
   const [sortOrder, setSortOrder] = useState<string>("desc");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [page, setPage] = useState(1);
+  const [limit] = useState(20);
+  
+  // SWR ile boards'ları yükle
+  const { 
+    boards: rawBoards, 
+    stats,
+    pagination,
+    isLoading: loading, 
+    mutate: mutateBoards 
+  } = useBoards({
+    search: debouncedSearch || undefined,
+    is_public: visibilityFilter === "public" ? "true" : visibilityFilter === "private" ? "false" : undefined,
+    sort_by: sortBy,
+    sort_order: sortOrder,
+    page,
+    limit,
+  });
+  
+  // Tip dönüşümü
+  const boards = rawBoards as BoardWithRelations[];
 
   // Modal states
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -157,43 +167,6 @@ export default function BoardsPage() {
   const [formIsDefault, setFormIsDefault] = useState(false);
   const [formRefreshInterval, setFormRefreshInterval] = useState("");
   const [formLoading, setFormLoading] = useState(false);
-
-  // Board'ları getir
-  const fetchBoards = useCallback(async () => {
-    try {
-      const params = new URLSearchParams();
-      if (searchQuery) params.set("search", searchQuery);
-      if (visibilityFilter === "public") params.set("is_public", "true");
-      if (visibilityFilter === "private") params.set("is_public", "false");
-      params.set("sort_by", sortBy);
-      params.set("sort_order", sortOrder);
-      params.set("page", pagination.page.toString());
-      params.set("limit", pagination.limit.toString());
-
-      const response = await fetch(`/api/boards?${params.toString()}`);
-      if (response.ok) {
-        const data = await response.json();
-        setBoards(data.boards || []);
-        setStats(data.stats || { total: 0, public: 0, private: 0, default: 0 });
-        setPagination(data.pagination || { page: 1, limit: 20, total: 0, totalPages: 0 });
-      } else {
-        const errorData = await response.json();
-        toast.error("Hata", { description: errorData.error });
-      }
-    } catch (error) {
-      console.error("Board'lar getirilemedi:", error);
-      toast.error("Hata", { description: "Board'lar yüklenirken bir hata oluştu." });
-    } finally {
-      setLoading(false);
-    }
-  }, [searchQuery, visibilityFilter, sortBy, sortOrder, pagination.page, pagination.limit]);
-
-  // İlk yükleme
-  useEffect(() => {
-    if (profile) {
-      fetchBoards();
-    }
-  }, [profile, fetchBoards]);
 
   // Form reset
   const resetForm = () => {
@@ -231,7 +204,7 @@ export default function BoardsPage() {
         toast.success("Başarılı", { description: data.message });
         setCreateDialogOpen(false);
         resetForm();
-        fetchBoards();
+        mutateBoards();
       } else {
         toast.error("Hata", { description: data.error });
       }
@@ -268,7 +241,7 @@ export default function BoardsPage() {
         setEditDialogOpen(false);
         setSelectedBoard(null);
         resetForm();
-        fetchBoards();
+        mutateBoards();
       } else {
         toast.error("Hata", { description: data.error });
       }
@@ -296,7 +269,7 @@ export default function BoardsPage() {
         toast.success("Başarılı", { description: data.message });
         setDeleteDialogOpen(false);
         setSelectedBoard(null);
-        fetchBoards();
+        mutateBoards();
       } else {
         toast.error("Hata", { description: data.error });
       }
@@ -410,7 +383,7 @@ export default function BoardsPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={fetchBoards}>
+            <Button variant="outline" onClick={() => mutateBoards()}>
               <RefreshCw className="h-4 w-4 mr-2" />
               Yenile
             </Button>
@@ -888,24 +861,24 @@ export default function BoardsPage() {
         )}
 
         {/* Pagination */}
-        {pagination.totalPages > 1 && (
+        {pagination && pagination.totalPages > 1 && (
           <div className="flex items-center justify-center gap-2">
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setPagination((p) => ({ ...p, page: p.page - 1 }))}
-              disabled={pagination.page <= 1}
+              onClick={() => setPage((p) => p - 1)}
+              disabled={page <= 1}
             >
               Önceki
             </Button>
             <span className="text-sm text-muted-foreground">
-              Sayfa {pagination.page} / {pagination.totalPages}
+              Sayfa {page} / {pagination.totalPages}
             </span>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setPagination((p) => ({ ...p, page: p.page + 1 }))}
-              disabled={pagination.page >= pagination.totalPages}
+              onClick={() => setPage((p) => p + 1)}
+              disabled={page >= pagination.totalPages}
             >
               Sonraki
             </Button>

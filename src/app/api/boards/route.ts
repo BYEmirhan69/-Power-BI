@@ -12,8 +12,8 @@ interface BoardWithRelations extends Dashboard {
 // Board'ları listele
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const adminClient = createAdminClient();
+    const supabase = await createClient() as any;
+    const adminClient = createAdminClient() as any;
 
     const {
       data: { user },
@@ -132,8 +132,8 @@ export async function GET(request: NextRequest) {
 // Yeni board oluştur
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const adminClient = createAdminClient();
+    const supabase = await createClient() as any;
+    const adminClient = createAdminClient() as any;
 
     const {
       data: { user },

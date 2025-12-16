@@ -87,16 +87,30 @@ export class ScrapingService {
     config: ScrapingConfig,
     startTime: number
   ): Promise<ScrapingResult> {
-    // Puppeteer dinamik import - sadece server-side'da yüklenecek
+    // Puppeteer dinamik import - sadece server-side'da ve kuruluysa yüklenecek
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let puppeteer: any;
-    try {
-      // @ts-expect-error - Puppeteer opsiyonel bağımlılıktır
-      puppeteer = await import("puppeteer");
-    } catch {
+    let puppeteer: any = null;
+    
+    // Build sırasında puppeteer import edilmesin
+    if (typeof window === 'undefined') {
+      try {
+        // Dynamic import with variable to prevent static analysis
+        const moduleName = 'puppeteer';
+        puppeteer = await import(/* webpackIgnore: true */ moduleName);
+      } catch {
+        return {
+          success: false,
+          error: "Puppeteer kurulu değil. Dinamik scraping için 'npm install puppeteer' çalıştırın.",
+          data: [],
+          pagesScraped: 0,
+          totalRecords: 0,
+          duration: Date.now() - startTime,
+        };
+      }
+    } else {
       return {
         success: false,
-        error: "Puppeteer kurulu değil. Dinamik scraping için 'npm install puppeteer' çalıştırın.",
+        error: "Dinamik scraping sadece sunucu tarafında çalışır.",
         data: [],
         pagesScraped: 0,
         totalRecords: 0,

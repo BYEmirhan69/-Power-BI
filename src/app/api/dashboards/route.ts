@@ -1,4 +1,4 @@
- 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -7,8 +7,8 @@ import type { Profile, Dashboard } from "@/types/database.types";
 // Dashboard'ları listele
 export async function GET() {
   try {
-    const supabase = await createClient();
-    const adminClient = createAdminClient();
+    const supabase = await createClient() as any;
+    const adminClient = createAdminClient() as any;
 
     const {
       data: { user },

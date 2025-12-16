@@ -16,13 +16,13 @@ import {
   Play,
   Pause,
   Edit,
-  Eye,
+  Eye as _Eye,
   FileSpreadsheet,
   File,
   Loader2,
   AlertCircle,
   LayoutDashboard,
-  Mail,
+  Mail as _Mail,
 } from "lucide-react";
 
 import {
@@ -37,7 +37,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs as _Tabs, TabsContent as _TabsContent, TabsList as _TabsList, TabsTrigger as _TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
@@ -353,7 +353,7 @@ export default function ReportsPage() {
 
       toast.success(report.is_active ? "Rapor devre dışı bırakıldı" : "Rapor aktifleştirildi");
       fetchReports();
-    } catch (error) {
+    } catch {
       toast.error("Durum güncellenemedi");
     }
   };

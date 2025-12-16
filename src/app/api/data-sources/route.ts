@@ -7,8 +7,8 @@ import type { DataSourceType, Profile, DataSource } from "@/types/database.types
 // Veri kaynaklarını listele
 export async function GET() {
   try {
-    const supabase = await createClient();
-    const adminClient = createAdminClient();
+    const supabase = await createClient() as any;
+    const adminClient = createAdminClient() as any;
 
     // Mevcut kullanıcıyı al
     const {
@@ -90,8 +90,8 @@ export async function GET() {
 // Yeni veri kaynağı oluştur
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const adminClient = createAdminClient();
+    const supabase = await createClient() as any;
+    const adminClient = createAdminClient() as any;
 
     // Mevcut kullanıcıyı al
     const {

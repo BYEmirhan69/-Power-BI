@@ -14,8 +14,8 @@ import {
 } from "@/components/charts/supabase-charts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, TrendingDown, Minus, RefreshCw } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { TrendingUp, TrendingDown, Minus, RefreshCw as _RefreshCw } from "lucide-react";
+import { Button as _Button } from "@/components/ui/button";
 
 // Varsayılan renkler
 const DEFAULT_COLORS = [

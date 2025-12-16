@@ -1,11 +1,11 @@
- 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { type NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
 // Daveti kabul et
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const supabase = await createClient() as any;
     const body = await request.json();
     const { token } = body;
 
@@ -149,7 +149,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const supabase = await createClient();
+    const supabase = await createClient() as any;
 
     // Daveti bul
     const { data: invitation, error: invitationError } = await supabase

@@ -16,16 +16,16 @@ import {
   Trash2,
   Edit,
   Play,
-  Pause,
+  Pause as _Pause,
   Clock,
   CheckCircle,
   XCircle,
   AlertCircle,
-  Settings,
+  Settings as _Settings,
   Calendar,
   Loader2,
   Eye,
-  Link2,
+  Link2 as _Link2,
   Copy,
 } from "lucide-react";
 
@@ -41,7 +41,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs as _Tabs, TabsContent as _TabsContent, TabsList as _TabsList, TabsTrigger as _TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import {

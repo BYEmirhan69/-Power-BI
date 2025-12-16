@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * API Route: Import Data
  * Doğrulanmış veriyi veritabanına kaydeder
@@ -10,7 +11,7 @@ import type { DataCategory } from "@/types/database.types";
 export async function POST(request: NextRequest) {
   try {
     // Auth kontrolü
-    const supabase = await createClient();
+    const supabase = await createClient() as any;
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
@@ -70,7 +71,6 @@ export async function POST(request: NextRequest) {
     }));
 
     // Dataset oluştur
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: dataset, error: datasetError } = await (supabase as any)
       .from("datasets")
       .insert({
@@ -95,11 +95,41 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // TODO: Büyük veri setleri için data'yı ayrı bir tabloya kaydet
-    // Şimdilik sadece metadata kaydediyoruz
+    // Verileri data_entries tablosuna kaydet
+    // Büyük veri setleri için batch insert yapıyoruz
+    const BATCH_SIZE = 500;
+    const totalBatches = Math.ceil(data.length / BATCH_SIZE);
+    let _insertedRows = 0;
+
+    for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
+      const start = batchIndex * BATCH_SIZE;
+      const end = Math.min(start + BATCH_SIZE, data.length);
+      const batchData = data.slice(start, end);
+
+      const entries = batchData.map((row: Record<string, unknown>, idx: number) => ({
+        dataset_id: dataset.id,
+        row_index: start + idx,
+        data: row,
+      }));
+
+      const { error: entriesError } = await (supabase as any)
+        .from("data_entries")
+        .insert(entries);
+
+      if (entriesError) {
+        console.error(`Batch ${batchIndex + 1} insert hatası:`, entriesError);
+        // Hata durumunda dataset'i sil (rollback)
+        await (supabase as any).from("datasets").delete().eq("id", dataset.id);
+        return NextResponse.json(
+          { success: false, error: "Veri kaydetme hatası: " + entriesError.message },
+          { status: 500 }
+        );
+      }
+
+      _insertedRows += batchData.length;
+    }
 
     // Activity log
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase as any).from("activity_logs").insert({
       user_id: user.id,
       organization_id: profile.organization_id,

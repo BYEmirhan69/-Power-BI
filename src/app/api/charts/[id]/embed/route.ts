@@ -1,4 +1,4 @@
- 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { type NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
@@ -9,7 +9,7 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    const supabase = await createClient();
+    const supabase = await createClient() as any;
     
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     
@@ -61,7 +61,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const supabase = await createClient();
+    const supabase = await createClient() as any;
     
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     
@@ -76,7 +76,7 @@ export async function GET(
       .from("charts")
       .select("id, name, embed_token, is_public")
       .eq("id", id)
-      .single();
+      .single() as { data: { id: string; name: string; embed_token: string; is_public: boolean } | null; error: any };
 
     if (error || !chart) {
       return NextResponse.json(

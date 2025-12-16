@@ -10,8 +10,6 @@ import {
   Database,
   FileSpreadsheet,
   TrendingUp,
-  Users,
-  Activity,
 } from "lucide-react";
 import { DashboardCharts } from "./dashboard-charts";
 
@@ -46,7 +44,7 @@ const stats = [
   },
 ];
 
-const recentActivity = [
+const _recentActivity = [
   {
     user: "Ahmet Yılmaz",
     action: "yeni bir dashboard oluşturdu",

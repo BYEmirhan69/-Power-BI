@@ -1,7 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useMemo } from "react";
+import { useDebounce } from "@/hooks/use-debounce";
+import { useCharts, useDatasets, useDatasetData, invalidateCache } from "@/hooks/use-swr-data";
 import { 
   BarChart3, 
   LineChart, 
@@ -97,16 +99,31 @@ interface Chart {
 interface Dataset {
   id: string;
   name: string;
+  schema?: { name: string; type: string }[];
+  row_count?: number;
 }
 
 export default function ChartsPage() {
-  const [charts, setCharts] = useState<Chart[]>([]);
-  const [datasets, setDatasets] = useState<Dataset[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  // Debounced search query - 300ms gecikme ile API çağrısı
   const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearch = useDebounce(searchQuery, 300);
+  
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [visibilityFilter, setVisibilityFilter] = useState<string>("all");
+  
+  // SWR ile veri çekme - cache ve dedup otomatik
+  const { 
+    charts, 
+    isLoading: loading, 
+    mutate: mutateCharts 
+  } = useCharts({
+    type: typeFilter !== "all" ? typeFilter : undefined,
+    is_public: visibilityFilter === "public" ? "true" : visibilityFilter === "private" ? "false" : undefined,
+    search: debouncedSearch || undefined,
+  });
+  
+  const { datasets } = useDatasets();
   
   // Modal states
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -131,55 +148,50 @@ export default function ChartsPage() {
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedUrl, setCopiedUrl] = useState(false);
 
-  const fetchCharts = useCallback(async () => {
-    try {
-      setLoading(true);
-      const params = new URLSearchParams();
-      if (typeFilter !== "all") params.set("type", typeFilter);
-      if (visibilityFilter === "public") params.set("is_public", "true");
-      if (visibilityFilter === "private") params.set("is_public", "false");
-      if (searchQuery) params.set("search", searchQuery);
+  // Dataset preview states - SWR ile
+  const [selectedXColumn, setSelectedXColumn] = useState<string>("");
+  const [selectedYColumn, setSelectedYColumn] = useState<string>("");
+  
+  // Dataset data için SWR hook
+  const { 
+    data: datasetPreviewData, 
+    dataset: selectedDatasetInfo,
+    isLoading: loadingDatasetPreview 
+  } = useDatasetData(
+    formData.hasDataset && formData.dataset_id ? formData.dataset_id : null, 
+    100
+  );
+  
+  // Schema'yı dataset info'dan al
+  const datasetSchema = useMemo(() => 
+    selectedDatasetInfo?.schema || [], 
+    [selectedDatasetInfo]
+  );
 
-      const response = await fetch(`/api/charts?${params.toString()}`);
-      const data = await response.json();
-      
-      if (response.ok) {
-        setCharts(data.charts || []);
-      } else {
-        toast.error(data.error || "Grafikler alınırken hata oluştu");
-      }
-    } catch (error) {
-      console.error("Fetch charts error:", error);
-      toast.error("Grafikler yüklenirken hata oluştu");
-    } finally {
-      setLoading(false);
-    }
-  }, [typeFilter, visibilityFilter, searchQuery]);
+  // Default kolon seçimlerini hesapla
+  const defaultXColumn = useMemo(() => {
+    if (datasetSchema.length === 0) return "";
+    const xCol = datasetSchema.find((s: { name: string; type: string }) => s.type === "string" || s.type === "date") || datasetSchema[0];
+    return xCol?.name || "";
+  }, [datasetSchema]);
+  
+  const defaultYColumn = useMemo(() => {
+    if (datasetSchema.length === 0) return "";
+    const yCol = datasetSchema.find((s: { name: string; type: string }) => s.type === "number");
+    return yCol?.name || datasetSchema[1]?.name || "";
+  }, [datasetSchema]);
+  
+  // Kolon seçimleri - default değerleri kullan (kullanıcı değiştirmezse)
+  const effectiveXColumn = selectedXColumn || defaultXColumn;
+  const effectiveYColumn = selectedYColumn || defaultYColumn;
 
-  const fetchDatasets = useCallback(async () => {
-    try {
-      const response = await fetch("/api/datasets");
-      const data = await response.json();
-      if (response.ok) {
-        setDatasets(data.datasets || []);
-      }
-    } catch (error) {
-      console.error("Fetch datasets error:", error);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchCharts();
-    fetchDatasets();
-  }, [fetchCharts, fetchDatasets]);
-
-  // İstatistikler
-  const stats = {
+  // İstatistikler - useMemo ile optimize
+  const stats = useMemo(() => ({
     total: charts.length,
-    public: charts.filter(c => c.is_public).length,
-    private: charts.filter(c => !c.is_public).length,
-    totalViews: charts.reduce((sum, c) => sum + (c.view_count || 0), 0),
-  };
+    public: charts.filter((c: Chart) => c.is_public).length,
+    private: charts.filter((c: Chart) => !c.is_public).length,
+    totalViews: charts.reduce((sum: number, c: Chart) => sum + (c.view_count || 0), 0),
+  }), [charts]);
 
   // Grafik türüne göre ikon al
   const getChartIcon = (type: ChartType) => {
@@ -198,7 +210,21 @@ export default function ChartsPage() {
       return;
     }
 
+    // Dataset seçildiyse ve kolon seçilmediyse uyar
+    if (formData.hasDataset && formData.dataset_id && (!effectiveXColumn || !effectiveYColumn)) {
+      toast.error("Lütfen X ve Y eksen kolonlarını seçin");
+      return;
+    }
+
     try {
+      // Chart config oluştur
+      const config: any = {};
+      if (formData.hasDataset && formData.dataset_id) {
+        config.xColumn = effectiveXColumn;
+        config.yColumn = effectiveYColumn;
+        config.schema = datasetSchema;
+      }
+
       const response = await fetch("/api/charts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -208,6 +234,7 @@ export default function ChartsPage() {
           type: formData.type,
           dataset_id: formData.dataset_id || null,
           is_public: formData.is_public,
+          config,
         }),
       });
 
@@ -217,7 +244,8 @@ export default function ChartsPage() {
         toast.success("Grafik başarıyla oluşturuldu");
         setCreateDialogOpen(false);
         resetForm();
-        fetchCharts();
+        mutateCharts(); // SWR cache'i yenile
+        invalidateCache(/\/api\/charts/); // Tüm charts cache'ini temizle
       } else {
         toast.error(data.error || "Grafik oluşturulurken hata oluştu");
       }
@@ -234,6 +262,14 @@ export default function ChartsPage() {
     }
 
     try {
+      // Chart config oluştur - spread ile kopyala, doğrudan mutate etme
+      const config: any = { ...(selectedChart.config || {}) };
+      if (formData.hasDataset && formData.dataset_id) {
+        config.xColumn = effectiveXColumn;
+        config.yColumn = effectiveYColumn;
+        config.schema = datasetSchema;
+      }
+
       const response = await fetch(`/api/charts/${selectedChart.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -243,6 +279,7 @@ export default function ChartsPage() {
           type: formData.type,
           dataset_id: formData.dataset_id || null,
           is_public: formData.is_public,
+          config,
         }),
       });
 
@@ -253,7 +290,7 @@ export default function ChartsPage() {
         setEditDialogOpen(false);
         setSelectedChart(null);
         resetForm();
-        fetchCharts();
+        mutateCharts(); // SWR cache'i yenile
       } else {
         toast.error(data.error || "Grafik güncellenirken hata oluştu");
       }
@@ -275,7 +312,7 @@ export default function ChartsPage() {
         toast.success("Grafik başarıyla silindi");
         setDeleteDialogOpen(false);
         setSelectedChart(null);
-        fetchCharts();
+        mutateCharts(); // SWR cache'i yenile
       } else {
         const data = await response.json();
         toast.error(data.error || "Grafik silinirken hata oluştu");
@@ -325,7 +362,7 @@ export default function ChartsPage() {
   title="${selectedChart.name}"
 ></iframe>`);
         toast.success("Embed token yenilendi");
-        fetchCharts();
+        mutateCharts(); // SWR cache'i yenile
       } else {
         toast.error(data.error || "Embed token yenilenirken hata oluştu");
       }
@@ -361,6 +398,10 @@ export default function ChartsPage() {
       is_public: false,
       hasDataset: false,
     });
+    // SWR ile yönetilen datasetPreviewData ve datasetSchema otomatik temizlenir
+    // formData.dataset_id boş olduğunda useDatasetData null döner
+    setSelectedXColumn("");
+    setSelectedYColumn("");
   };
 
   const openEditDialog = (chart: Chart) => {
@@ -524,7 +565,7 @@ export default function ChartsPage() {
         </Card>
       ) : viewMode === "grid" ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {charts.map((chart) => {
+          {charts.map((chart: Chart) => {
             const IconComponent = getChartIcon(chart.type);
             return (
               <Card key={chart.id} className="group relative hover:shadow-md transition-shadow">
@@ -624,7 +665,7 @@ export default function ChartsPage() {
               </tr>
             </thead>
             <tbody>
-              {charts.map((chart) => {
+              {charts.map((chart: Chart) => {
                 const IconComponent = getChartIcon(chart.type);
                 return (
                   <tr key={chart.id} className="border-b">
@@ -781,7 +822,7 @@ export default function ChartsPage() {
                     </div>
                   </div>
                 </TabsContent>
-                <TabsContent value="with-dataset" className="mt-3">
+                <TabsContent value="with-dataset" className="mt-3 space-y-4">
                   {datasets.length === 0 ? (
                     <div className="rounded-lg border border-muted p-3 text-center">
                       <Database className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
@@ -790,24 +831,115 @@ export default function ChartsPage() {
                       </p>
                     </div>
                   ) : (
-                    <Select 
-                      value={formData.dataset_id || ""} 
-                      onValueChange={(value) => setFormData({ ...formData, dataset_id: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Bir veri seti seçin" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {datasets.map((dataset) => (
-                          <SelectItem key={dataset.id} value={dataset.id}>
-                            <div className="flex items-center gap-2">
-                              <Database className="h-4 w-4" />
-                              {dataset.name}
+                    <>
+                      <Select 
+                        value={formData.dataset_id || ""} 
+                        onValueChange={(value) => setFormData({ ...formData, dataset_id: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Bir veri seti seçin" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {datasets.map((dataset: Dataset) => (
+                            <SelectItem key={dataset.id} value={dataset.id}>
+                              <div className="flex items-center gap-2">
+                                <Database className="h-4 w-4" />
+                                {dataset.name}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      {/* Dataset seçildiyse kolon seçicileri göster */}
+                      {formData.dataset_id && (
+                        <>
+                          {loadingDatasetPreview ? (
+                            <div className="flex items-center justify-center py-4">
+                              <RefreshCw className="h-5 w-5 animate-spin text-muted-foreground" />
+                              <span className="ml-2 text-sm text-muted-foreground">Veri yükleniyor...</span>
                             </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                          ) : datasetSchema.length > 0 ? (
+                            <div className="space-y-3">
+                              <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-1">
+                                  <Label className="text-xs">X Ekseni (Etiketler)</Label>
+                                  <Select 
+                                    value={selectedXColumn} 
+                                    onValueChange={setSelectedXColumn}
+                                  >
+                                    <SelectTrigger className="h-9">
+                                      <SelectValue placeholder="Kolon seçin" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {datasetSchema.map((col: { name: string; type: string }) => (
+                                        <SelectItem key={col.name} value={col.name}>
+                                          <div className="flex items-center gap-2">
+                                            <Badge variant="outline" className="text-[10px] px-1">
+                                              {col.type}
+                                            </Badge>
+                                            {col.name}
+                                          </div>
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <div className="space-y-1">
+                                  <Label className="text-xs">Y Ekseni (Değerler)</Label>
+                                  <Select 
+                                    value={selectedYColumn} 
+                                    onValueChange={setSelectedYColumn}
+                                  >
+                                    <SelectTrigger className="h-9">
+                                      <SelectValue placeholder="Kolon seçin" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {datasetSchema.map((col: { name: string; type: string }) => (
+                                        <SelectItem key={col.name} value={col.name}>
+                                          <div className="flex items-center gap-2">
+                                            <Badge variant="outline" className="text-[10px] px-1">
+                                              {col.type}
+                                            </Badge>
+                                            {col.name}
+                                          </div>
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              </div>
+
+                              {/* Grafik Önizleme */}
+                              {effectiveXColumn && effectiveYColumn && datasetPreviewData.length > 0 && (
+                                <div className="rounded-lg border bg-muted/30 p-3">
+                                  <p className="text-xs text-muted-foreground mb-2">
+                                    Önizleme ({datasetPreviewData.length} satır)
+                                  </p>
+                                  <div className="h-32">
+                                    <MiniChart
+                                      type={formData.type}
+                                      data={datasetPreviewData.slice(0, 20).map((row: Record<string, unknown>) => Number(row[effectiveYColumn]) || 0)}
+                                      labels={datasetPreviewData.slice(0, 20).map((row: Record<string, unknown>) => String(row[effectiveXColumn] || ''))}
+                                      height={120}
+                                    />
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950 p-3">
+                              <div className="flex items-start gap-2">
+                                <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5" />
+                                <p className="text-sm text-amber-700 dark:text-amber-300">
+                                  Bu veri setinde henüz veri bulunmuyor.
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </>
                   )}
                 </TabsContent>
               </Tabs>
@@ -920,7 +1052,7 @@ export default function ChartsPage() {
                     </div>
                   </div>
                 </TabsContent>
-                <TabsContent value="with-dataset" className="mt-3">
+                <TabsContent value="with-dataset" className="mt-3 space-y-4">
                   {datasets.length === 0 ? (
                     <div className="rounded-lg border border-muted p-3 text-center">
                       <Database className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
@@ -929,24 +1061,115 @@ export default function ChartsPage() {
                       </p>
                     </div>
                   ) : (
-                    <Select 
-                      value={formData.dataset_id || ""} 
-                      onValueChange={(value) => setFormData({ ...formData, dataset_id: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Bir veri seti seçin" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {datasets.map((dataset) => (
-                          <SelectItem key={dataset.id} value={dataset.id}>
-                            <div className="flex items-center gap-2">
-                              <Database className="h-4 w-4" />
-                              {dataset.name}
+                    <>
+                      <Select 
+                        value={formData.dataset_id || ""} 
+                        onValueChange={(value) => setFormData({ ...formData, dataset_id: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Bir veri seti seçin" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {datasets.map((dataset: Dataset) => (
+                            <SelectItem key={dataset.id} value={dataset.id}>
+                              <div className="flex items-center gap-2">
+                                <Database className="h-4 w-4" />
+                                {dataset.name}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      {/* Dataset seçildiyse kolon seçicileri göster */}
+                      {formData.dataset_id && (
+                        <>
+                          {loadingDatasetPreview ? (
+                            <div className="flex items-center justify-center py-4">
+                              <RefreshCw className="h-5 w-5 animate-spin text-muted-foreground" />
+                              <span className="ml-2 text-sm text-muted-foreground">Veri yükleniyor...</span>
                             </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                          ) : datasetSchema.length > 0 ? (
+                            <div className="space-y-3">
+                              <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-1">
+                                  <Label className="text-xs">X Ekseni (Etiketler)</Label>
+                                  <Select 
+                                    value={selectedXColumn} 
+                                    onValueChange={setSelectedXColumn}
+                                  >
+                                    <SelectTrigger className="h-9">
+                                      <SelectValue placeholder="Kolon seçin" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {datasetSchema.map((col: { name: string; type: string }) => (
+                                        <SelectItem key={col.name} value={col.name}>
+                                          <div className="flex items-center gap-2">
+                                            <Badge variant="outline" className="text-[10px] px-1">
+                                              {col.type}
+                                            </Badge>
+                                            {col.name}
+                                          </div>
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <div className="space-y-1">
+                                  <Label className="text-xs">Y Ekseni (Değerler)</Label>
+                                  <Select 
+                                    value={selectedYColumn} 
+                                    onValueChange={setSelectedYColumn}
+                                  >
+                                    <SelectTrigger className="h-9">
+                                      <SelectValue placeholder="Kolon seçin" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {datasetSchema.map((col: { name: string; type: string }) => (
+                                        <SelectItem key={col.name} value={col.name}>
+                                          <div className="flex items-center gap-2">
+                                            <Badge variant="outline" className="text-[10px] px-1">
+                                              {col.type}
+                                            </Badge>
+                                            {col.name}
+                                          </div>
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              </div>
+
+                              {/* Grafik Önizleme */}
+                              {effectiveXColumn && effectiveYColumn && datasetPreviewData.length > 0 && (
+                                <div className="rounded-lg border bg-muted/30 p-3">
+                                  <p className="text-xs text-muted-foreground mb-2">
+                                    Önizleme ({datasetPreviewData.length} satır)
+                                  </p>
+                                  <div className="h-32">
+                                    <MiniChart
+                                      type={formData.type}
+                                      data={datasetPreviewData.slice(0, 20).map((row: Record<string, unknown>) => Number(row[effectiveYColumn]) || 0)}
+                                      labels={datasetPreviewData.slice(0, 20).map((row: Record<string, unknown>) => String(row[effectiveXColumn] || ''))}
+                                      height={120}
+                                    />
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950 p-3">
+                              <div className="flex items-start gap-2">
+                                <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5" />
+                                <p className="text-sm text-amber-700 dark:text-amber-300">
+                                  Bu veri setinde henüz veri bulunmuyor.
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </>
                   )}
                 </TabsContent>
               </Tabs>

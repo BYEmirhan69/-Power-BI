@@ -1,13 +1,26 @@
- 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { type NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
+interface Profile {
+  id: string;
+  organization_id: string;
+  [key: string]: any;
+}
+
+interface Dataset {
+  id: string;
+  name: string;
+  organization_id: string;
+  [key: string]: any;
+}
+
 // Dataset'leri listele
 export async function GET() {
   try {
-    const supabase = await createClient();
-    const adminClient = createAdminClient();
+    const supabase = await createClient() as any;
+    const adminClient = createAdminClient() as any;
 
     const {
       data: { user },
@@ -22,7 +35,7 @@ export async function GET() {
       .from("profiles")
       .select("*")
       .eq("id", user.id)
-      .single();
+      .single() as { data: Profile | null };
 
     if (!profile?.organization_id) {
       return NextResponse.json({ error: "Organizasyon bulunamadı" }, { status: 404 });
@@ -38,7 +51,7 @@ export async function GET() {
       `)
       .eq("organization_id", profile.organization_id)
       .is("deleted_at", null)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false }) as { data: Dataset[] | null; error: any };
 
     if (error) {
       console.error("Dataset'ler alınırken hata:", error);
@@ -55,8 +68,8 @@ export async function GET() {
 // Yeni dataset oluştur
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const adminClient = createAdminClient();
+    const supabase = await createClient() as any;
+    const adminClient = createAdminClient() as any;
     const body = await request.json();
 
     const {
@@ -90,7 +103,7 @@ export async function POST(request: NextRequest) {
       .from("profiles")
       .select("*")
       .eq("id", user.id)
-      .single();
+      .single() as { data: Profile | null };
 
     if (!profile?.organization_id) {
       return NextResponse.json({ error: "Organizasyon bulunamadı" }, { status: 404 });
@@ -112,7 +125,7 @@ export async function POST(request: NextRequest) {
         file_url: file_url || null,
       })
       .select()
-      .single();
+      .single() as { data: Dataset | null; error: any };
 
     if (error) {
       console.error("Dataset oluşturulurken hata:", error);
@@ -125,7 +138,7 @@ export async function POST(request: NextRequest) {
       organization_id: profile.organization_id,
       action: "dataset_created",
       entity_type: "dataset",
-      entity_id: dataset.id,
+      entity_id: dataset?.id,
       entity_name: name,
       metadata: { type, category, row_count },
     });

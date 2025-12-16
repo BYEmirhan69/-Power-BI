@@ -274,6 +274,9 @@ export default function DataImportPage() {
           <DataPreview
             data={previewResult.preview}
             columns={previewResult.columns}
+            pageSize={100}
+            pageSizeOptions={[25, 50, 100, 250, 500, 1000]}
+            maxHeight="500px"
           />
 
           <div className="flex justify-end gap-4">
@@ -358,6 +361,9 @@ export default function DataImportPage() {
             data={validationResult.cleanedData || []}
             columns={previewResult.columns}
             classification={classification}
+            pageSize={100}
+            pageSizeOptions={[25, 50, 100, 250, 500, 1000]}
+            maxHeight="500px"
           />
 
           <div className="flex justify-end gap-4">

@@ -454,11 +454,12 @@ class CarLights {
   }
 
   init() {
-    const options = this.options;
+    const { options } = this;
     const curve = new THREE.LineCurve3(new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, -1));
     const geometry = new THREE.TubeGeometry(curve, 40, 1, 8, false);
 
-    const instanced = new THREE.InstancedBufferGeometry().copy(geometry as unknown as THREE.BufferGeometry) as THREE.InstancedBufferGeometry;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const instanced = new THREE.InstancedBufferGeometry().copy(geometry as any) as THREE.InstancedBufferGeometry;
     instanced.instanceCount = options.lightPairsPerRoadWay * 2;
 
     const laneWidth = options.roadWidth / options.lanesPerRoad;
@@ -614,9 +615,10 @@ class LightsSticks {
   }
 
   init() {
-    const options = this.options;
+    const { options } = this;
     const geometry = new THREE.PlaneGeometry(1, 1);
-    const instanced = new THREE.InstancedBufferGeometry().copy(geometry as unknown as THREE.BufferGeometry) as THREE.InstancedBufferGeometry;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const instanced = new THREE.InstancedBufferGeometry().copy(geometry as any) as THREE.InstancedBufferGeometry;
     const totalSticks = options.totalSideLightSticks;
     instanced.instanceCount = totalSticks;
 
@@ -751,7 +753,7 @@ class Road {
   }
 
   createPlane(side: number, _width: number, isRoad: boolean) {
-    const options = this.options;
+    const { options } = this;
     const segments = 100;
     const geometry = new THREE.PlaneGeometry(
       isRoad ? options.roadWidth : options.islandWidth,
@@ -1052,7 +1054,7 @@ class App {
   }
 
   loadAssets(): Promise<void> {
-    const assets = this.assets;
+    const { assets } = this;
     return new Promise(resolve => {
       const manager = new THREE.LoadingManager(resolve);
 
@@ -1080,7 +1082,7 @@ class App {
 
   init() {
     this.initPasses();
-    const options = this.options;
+    const { options } = this;
     this.road.init();
     this.leftCarLights.init();
     this.leftCarLights.mesh.position.setX(-options.roadWidth / 2 - options.islandWidth / 2);

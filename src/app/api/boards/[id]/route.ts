@@ -16,8 +16,8 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const supabase = await createClient();
-    const adminClient = createAdminClient();
+    const supabase = await createClient() as any;
+    const adminClient = createAdminClient() as any;
 
     const {
       data: { user },
@@ -90,8 +90,8 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params;
-    const supabase = await createClient();
-    const adminClient = createAdminClient();
+    const supabase = await createClient() as any;
+    const adminClient = createAdminClient() as any;
 
     const {
       data: { user },
@@ -188,8 +188,8 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const supabase = await createClient();
-    const adminClient = createAdminClient();
+    const supabase = await createClient() as any;
+    const adminClient = createAdminClient() as any;
 
     const {
       data: { user },

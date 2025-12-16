@@ -2,7 +2,7 @@
 
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar, Header } from "@/components/layout";
-import { ThemeProvider } from "@/components/providers";
+import { ThemeProvider, SWRProvider } from "@/components/providers";
 import { AuthProvider } from "@/hooks/use-auth";
 import { Toaster } from "@/components/ui/sonner";
 import { useSyncExternalStore } from "react";
@@ -37,18 +37,20 @@ export default function DashboardLayout({
       enableSystem
       disableTransitionOnChange
     >
-      <AuthProvider>
-        <SidebarProvider>
-          <AppSidebar />
-          <SidebarInset>
-            <Header />
-            <main className="flex-1 overflow-auto p-4 md:p-6">
-              {children}
-            </main>
-          </SidebarInset>
-        </SidebarProvider>
-        <Toaster />
-      </AuthProvider>
+      <SWRProvider>
+        <AuthProvider>
+          <SidebarProvider>
+            <AppSidebar />
+            <SidebarInset>
+              <Header />
+              <main className="flex-1 overflow-auto p-4 md:p-6">
+                {children}
+              </main>
+            </SidebarInset>
+          </SidebarProvider>
+          <Toaster />
+        </AuthProvider>
+      </SWRProvider>
     </ThemeProvider>
   );
 }

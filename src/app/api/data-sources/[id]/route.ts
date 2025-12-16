@@ -11,8 +11,8 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const supabase = await createClient();
-    const adminClient = createAdminClient();
+    const supabase = await createClient() as any;
+    const adminClient = createAdminClient() as any;
 
     const {
       data: { user },
@@ -70,8 +70,8 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params;
-    const supabase = await createClient();
-    const adminClient = createAdminClient();
+    const supabase = await createClient() as any;
+    const adminClient = createAdminClient() as any;
 
     const {
       data: { user },
@@ -104,7 +104,6 @@ export async function PATCH(
     if (sync_schedule !== undefined) updateData.sync_schedule = sync_schedule;
     if (is_active !== undefined) updateData.is_active = is_active;
 
-    // @ts-expect-error - Supabase type issue
     const { data: dataSourceData, error } = await adminClient
       .from("data_sources")
       .update(updateData)
@@ -147,8 +146,8 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const supabase = await createClient();
-    const adminClient = createAdminClient();
+    const supabase = await createClient() as any;
+    const adminClient = createAdminClient() as any;
 
     const {
       data: { user },
@@ -180,7 +179,6 @@ export async function DELETE(
     const existing = existingData as { name: string } | null;
 
     // Soft delete
-    // @ts-expect-error - Supabase type issue
     const { error } = await adminClient
       .from("data_sources")
       .update({ 

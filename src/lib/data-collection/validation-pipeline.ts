@@ -8,7 +8,7 @@ import {
   type ValidationIssue,
   type ValidationRule,
   type CleaningOptions,
-  ValidationSeverity,
+  type ValidationSeverity as _ValidationSeverity,
   type ColumnInfo,
 } from "@/types/data-collection.types";
 
@@ -200,8 +200,8 @@ export class ValidationPipeline {
     value: unknown,
     rule: ValidationRule,
     rowIndex: number,
-    columns: ColumnInfo[],
-    options: CleaningOptions
+    _columns: ColumnInfo[],
+    _options: CleaningOptions
   ): ValidationIssue | null {
     switch (rule.type) {
       case "required":

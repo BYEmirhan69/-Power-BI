@@ -162,7 +162,7 @@ export function FileUploader({
     }
   };
 
-  const processFile = async (file: File) => {
+  const processFile = useCallback(async (file: File) => {
     setStatus("uploading");
     setProgress(20);
     setError(null);
@@ -172,7 +172,7 @@ export function FileUploader({
     try {
       const formData = new FormData();
       formData.append("file", file);
-      formData.append("previewRows", "100");
+      formData.append("previewRows", "5000");
 
       setProgress(40);
       setStatus("processing");
@@ -205,7 +205,7 @@ export function FileUploader({
       setError(errorMessage);
       onError?.(errorMessage);
     }
-  };
+  }, [enableAINormalization, onPreviewComplete, onError]);
 
   const onDrop = useCallback((acceptedFiles: File[], rejectedFiles: unknown[]) => {
     if (rejectedFiles.length > 0) {
@@ -218,7 +218,7 @@ export function FileUploader({
       setSelectedFile(file);
       processFile(file);
     }
-  }, []);
+  }, [processFile]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,

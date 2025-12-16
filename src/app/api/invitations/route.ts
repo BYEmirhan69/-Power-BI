@@ -1,11 +1,11 @@
- 
-import { NextResponse } from "next/server";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { type NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
 // Davetleri listele
 export async function GET() {
   try {
-    const supabase = await createClient();
+    const supabase = await createClient() as any;
 
     const {
       data: { user },
@@ -41,7 +41,7 @@ export async function GET() {
       .from("invitations")
       .select(`
         *,
-        invited_by_profile:profiles!invitations_invited_by_fkey(full_name, email)
+        invited_by_profile:profiles!invited_by(full_name, email)
       `)
       .eq("organization_id", currentProfile.organization_id)
       .order("created_at", { ascending: false });
@@ -67,7 +67,7 @@ export async function GET() {
 // Yeni davet oluştur
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const supabase = await createClient() as any;
     const body = await request.json();
     const { email, role } = body;
 

@@ -1,4 +1,4 @@
- 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { type NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -6,8 +6,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 // Raporları listele
 export async function GET() {
   try {
-    const supabase = await createClient();
-    const adminClient = createAdminClient();
+    const supabase = await createClient() as any;
+    const adminClient = createAdminClient() as any;
 
     const {
       data: { user },
@@ -55,8 +55,8 @@ export async function GET() {
 // Yeni rapor oluştur
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const adminClient = createAdminClient();
+    const supabase = await createClient() as any;
+    const adminClient = createAdminClient() as any;
     const body = await request.json();
 
     const {

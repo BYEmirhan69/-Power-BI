@@ -1,10 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { type NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
 // Şifre değiştir
 export async function PUT(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const supabase = await createClient() as any;
     
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     
@@ -39,14 +40,12 @@ export async function PUT(request: NextRequest) {
     }
 
     // Activity log ekle
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: profile } = await (supabase as any)
       .from("profiles")
       .select("organization_id")
       .eq("id", user.id)
       .single();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase as any).from("activity_logs").insert({
       user_id: user.id,
       organization_id: profile?.organization_id ?? null,

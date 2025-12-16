@@ -263,7 +263,7 @@ export class CSVNormalizerService {
   private applyNormalizationToRemainingData(
     remainingData: Record<string, unknown>[],
     changes: NormalizationChange[],
-    sampleData: Record<string, unknown>[]
+    _sampleData: Record<string, unknown>[]
   ): Record<string, unknown>[] {
     // Kolon yeniden adlandırma mapping'i oluştur
     const columnMapping: Record<string, string> = {};
@@ -352,7 +352,7 @@ export class CSVNormalizerService {
       /^\d{2}\/\d{2}\/\d{4}$/,
       /^\d{2}\.\d{2}\.\d{4}$/,
     ];
-    let dateFormatCount = 0;
+    let _dateFormatCount = 0;
 
     columns
       .filter((c) => c.inferredType === "date")
@@ -365,7 +365,7 @@ export class CSVNormalizerService {
           });
         });
         if (formats.size > 1) {
-          dateFormatCount++;
+          _dateFormatCount++;
           issues.push(`Farklı tarih formatları: ${col.name}`);
         }
       });

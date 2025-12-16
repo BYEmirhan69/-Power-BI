@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * API Route: CSV Normalize
  * AI ile CSV verilerini normalize eder
@@ -18,7 +19,7 @@ interface NormalizeRequestBody {
 export async function POST(request: NextRequest) {
   try {
     // Auth kontrolü
-    const supabase = await createClient();
+    const supabase = await createClient() as any;
     const {
       data: { user },
       error: authError,

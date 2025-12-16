@@ -7,8 +7,8 @@ import type { Profile, Chart } from "@/types/database.types";
 // GET - Tüm grafikleri listele
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const adminClient = createAdminClient();
+    const supabase = await createClient() as any;
+    const adminClient = createAdminClient() as any;
     
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     
@@ -88,8 +88,8 @@ export async function GET(request: NextRequest) {
 // POST - Yeni grafik oluştur
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const adminClient = createAdminClient();
+    const supabase = await createClient() as any;
+    const adminClient = createAdminClient() as any;
     
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     

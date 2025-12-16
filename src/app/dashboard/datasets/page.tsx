@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
+import { useDatasets } from "@/hooks/use-swr-data";
+import { useDebounce } from "@/hooks/use-debounce";
 import { toast } from "sonner";
 import {
   FileSpreadsheet,
-  Plus,
+  Plus as _Plus,
   Search,
   Trash2,
   MoreVertical,
@@ -20,13 +22,13 @@ import {
   Loader2,
   AlertCircle,
   Hash,
-  FileText,
+  FileText as _FileText,
   TrendingUp,
   DollarSign,
   Clock,
   Layers,
-  ExternalLink,
-  Copy,
+  ExternalLink as _ExternalLink,
+  Copy as _Copy,
 } from "lucide-react";
 
 import {
@@ -41,7 +43,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Progress } from "@/components/ui/progress";
+import { Progress as _Progress } from "@/components/ui/progress";
 import {
   Dialog,
   DialogContent,
@@ -49,7 +51,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
+  DialogTrigger as _DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   DropdownMenu,
@@ -147,12 +149,21 @@ const typeColors: Record<string, string> = {
 
 export default function DatasetsPage() {
   const router = useRouter();
-  const { user, profile, loading: authLoading } = useAuth();
+  const { loading: authLoading } = useAuth();
 
+  // SWR ile dataset'leri yükle - cache ve dedup otomatik
+  const { 
+    datasets: rawDatasets, 
+    isLoading: loading, 
+    mutate: mutateDatasets 
+  } = useDatasets();
+  
+  // Tip dönüşümü
+  const datasets = rawDatasets as DatasetWithRelations[];
+  
   // State
-  const [datasets, setDatasets] = useState<DatasetWithRelations[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearch = useDebounce(searchQuery, 300);
   const [filterCategory, setFilterCategory] = useState<string>("all");
   const [filterType, setFilterType] = useState<string>("all");
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
@@ -168,32 +179,6 @@ export default function DatasetsPage() {
   const [formName, setFormName] = useState("");
   const [formDescription, setFormDescription] = useState("");
   const [formCategory, setFormCategory] = useState<DataCategory>("other");
-
-  // Dataset'leri yükle
-  const fetchDatasets = useCallback(async () => {
-    try {
-      setLoading(true);
-      const response = await fetch("/api/datasets");
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Dataset'ler yüklenemedi");
-      }
-
-      setDatasets(data.datasets || []);
-    } catch (error) {
-      console.error("Dataset'ler yüklenirken hata:", error);
-      toast.error("Dataset'ler yüklenemedi");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (user && profile) {
-      fetchDatasets();
-    }
-  }, [user, profile, fetchDatasets]);
 
   // Form sıfırla
   const resetForm = () => {
@@ -231,7 +216,7 @@ export default function DatasetsPage() {
       toast.success("Dataset başarıyla güncellendi");
       setEditDialogOpen(false);
       resetForm();
-      fetchDatasets();
+      mutateDatasets();
     } catch (error: unknown) {
       console.error("Dataset güncellenirken hata:", error);
       toast.error(error instanceof Error ? error.message : "Dataset güncellenemedi");
@@ -259,7 +244,7 @@ export default function DatasetsPage() {
       toast.success("Dataset başarıyla silindi");
       setDeleteDialogOpen(false);
       setSelectedDataset(null);
-      fetchDatasets();
+      mutateDatasets();
     } catch (error: unknown) {
       console.error("Dataset silinirken hata:", error);
       toast.error(error instanceof Error ? error.message : "Dataset silinemedi");
@@ -292,19 +277,21 @@ export default function DatasetsPage() {
     return [];
   };
 
-  // Filtrelenmiş dataset'ler
-  const filteredDatasets = datasets.filter((dataset) => {
-    const matchesSearch =
-      dataset.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      dataset.description?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = filterCategory === "all" || dataset.category === filterCategory;
-    const matchesType = filterType === "all" || dataset.type === filterType;
+  // Filtrelenmiş dataset'ler - useMemo ile optimize
+  const filteredDatasets = useMemo(() => {
+    return datasets.filter((dataset) => {
+      const matchesSearch =
+        dataset.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+        dataset.description?.toLowerCase().includes(debouncedSearch.toLowerCase());
+      const matchesCategory = filterCategory === "all" || dataset.category === filterCategory;
+      const matchesType = filterType === "all" || dataset.type === filterType;
 
-    return matchesSearch && matchesCategory && matchesType;
-  });
+      return matchesSearch && matchesCategory && matchesType;
+    });
+  }, [datasets, debouncedSearch, filterCategory, filterType]);
 
-  // İstatistikler
-  const stats = {
+  // İstatistikler - useMemo ile optimize
+  const stats = useMemo(() => ({
     total: datasets.length,
     totalRows: datasets.reduce((acc, d) => acc + (d.row_count || 0), 0),
     categories: {
@@ -313,7 +300,7 @@ export default function DatasetsPage() {
       behavioral: datasets.filter((d) => d.category === "behavioral").length,
       technological: datasets.filter((d) => d.category === "technological").length,
     },
-  };
+  }), [datasets]);
 
   // Tarih formatlama
   const formatDate = (dateString: string | null) => {
@@ -498,7 +485,7 @@ export default function DatasetsPage() {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon" onClick={fetchDatasets}>
+                    <Button variant="outline" size="icon" onClick={() => mutateDatasets()}>
                       <RefreshCw className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>

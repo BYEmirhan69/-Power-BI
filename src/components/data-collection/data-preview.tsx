@@ -20,10 +20,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   ChevronLeft,
   ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
   Search,
-  Filter,
+  Filter as _Filter,
   Download,
   Eye,
   EyeOff,
@@ -36,8 +45,10 @@ interface DataPreviewProps {
   columns: ColumnInfo[];
   classification?: ClassificationResult | null;
   pageSize?: number;
+  pageSizeOptions?: number[];
   className?: string;
   onExport?: (format: "csv" | "json") => void;
+  maxHeight?: string;
 }
 
 const TYPE_COLORS: Record<string, string> = {
@@ -61,13 +72,16 @@ export function DataPreview({
   data,
   columns,
   classification,
-  pageSize = 10,
+  pageSize: initialPageSize = 50,
+  pageSizeOptions = [25, 50, 100, 250, 500],
   className,
   onExport,
+  maxHeight = "600px",
 }: DataPreviewProps) {
   const [currentPage, setCurrentPage] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
   const [hiddenColumns, setHiddenColumns] = useState<Set<string>>(new Set());
+  const [pageSize, setPageSize] = useState(initialPageSize);
 
   const visibleColumns = useMemo(() => {
     return columns.filter((col) => !hiddenColumns.has(col.name));
@@ -211,7 +225,7 @@ export function DataPreview({
         </div>
 
         {/* Table */}
-        <ScrollArea className="rounded-md border">
+        <ScrollArea className="rounded-md border" style={{ maxHeight }}>
           <Table>
             <TableHeader>
               <TableRow>
@@ -263,29 +277,101 @@ export function DataPreview({
         </ScrollArea>
 
         {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between mt-4">
-            <p className="text-sm text-muted-foreground">
-              Sayfa {currentPage + 1} / {totalPages}
-            </p>
-            <div className="flex gap-2">
+        {totalPages > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-4 mt-4">
+            {/* Sol: Sayfa bilgisi ve boyut seçici */}
+            <div className="flex items-center gap-4">
+              <p className="text-sm text-muted-foreground">
+                Toplam <span className="font-medium">{filteredData.length}</span> satır
+                {filteredData.length !== data.length && (
+                  <span> (filtrelendi: {data.length})</span>
+                )}
+              </p>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Sayfa başına:</span>
+                <Select
+                  value={pageSize.toString()}
+                  onValueChange={(value) => {
+                    setPageSize(Number(value));
+                    setCurrentPage(0);
+                  }}
+                >
+                  <SelectTrigger className="h-8 w-[80px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {pageSizeOptions.map((size) => (
+                      <SelectItem key={size} value={size.toString()}>
+                        {size}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Orta: Sayfa navigasyonu */}
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(0)}
+                disabled={currentPage === 0}
+                title="İlk sayfa"
+              >
+                <ChevronsLeft className="h-4 w-4" />
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
                 disabled={currentPage === 0}
+                title="Önceki sayfa"
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
+              
+              <div className="flex items-center gap-1">
+                <Input
+                  type="number"
+                  min={1}
+                  max={totalPages}
+                  value={currentPage + 1}
+                  onChange={(e) => {
+                    const page = parseInt(e.target.value) - 1;
+                    if (page >= 0 && page < totalPages) {
+                      setCurrentPage(page);
+                    }
+                  }}
+                  className="h-8 w-16 text-center"
+                />
+                <span className="text-sm text-muted-foreground">/ {totalPages}</span>
+              </div>
+
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setCurrentPage((p) => Math.min(totalPages - 1, p + 1))}
                 disabled={currentPage === totalPages - 1}
+                title="Sonraki sayfa"
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(totalPages - 1)}
+                disabled={currentPage === totalPages - 1}
+                title="Son sayfa"
+              >
+                <ChevronsRight className="h-4 w-4" />
+              </Button>
             </div>
+
+            {/* Sağ: Gösterilen aralık */}
+            <p className="text-sm text-muted-foreground">
+              {currentPage * pageSize + 1}-{Math.min((currentPage + 1) * pageSize, filteredData.length)} gösteriliyor
+            </p>
           </div>
         )}
 

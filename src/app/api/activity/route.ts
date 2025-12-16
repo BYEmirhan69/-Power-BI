@@ -1,14 +1,14 @@
- 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { type NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import type { Profile, ActivityLog } from "@/types/database.types";
+import type { Profile } from "@/types/database.types";
 
 // Aktivite loglarını listele
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const adminClient = createAdminClient();
+    const supabase = await createClient() as any;
+    const adminClient = createAdminClient() as any;
 
     // Mevcut kullanıcıyı al
     const {
@@ -116,10 +116,10 @@ export async function GET(request: NextRequest) {
 }
 
 // İstatistikleri getir
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const adminClient = createAdminClient();
+    const supabase = await createClient() as any;
+    const adminClient = createAdminClient() as any;
 
     const {
       data: { user },

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * API Route: CSV Analyze
  * CSV verilerini analiz eder ve AI normalizasyonu gerekip gerekmediğini belirler
@@ -16,7 +17,7 @@ interface AnalyzeRequestBody {
 export async function POST(request: NextRequest) {
   try {
     // Auth kontrolü
-    const supabase = await createClient();
+    const supabase = await createClient() as any;
     const {
       data: { user },
       error: authError,

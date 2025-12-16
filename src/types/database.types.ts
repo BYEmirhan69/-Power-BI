@@ -567,6 +567,29 @@ export interface Database {
           user_agent?: string | null;
         };
       };
+      data_entries: {
+        Row: {
+          id: string;
+          dataset_id: string;
+          row_index: number;
+          data: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          dataset_id: string;
+          row_index: number;
+          data: Json;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          dataset_id?: string;
+          row_index?: number;
+          data?: Json;
+          created_at?: string;
+        };
+      };
     };
     Views: {
       [_ in never]: never;
@@ -640,6 +663,7 @@ export type Notification = Database["public"]["Tables"]["notifications"]["Row"];
 export type Invitation = Database["public"]["Tables"]["invitations"]["Row"];
 export type DataVersion = Database["public"]["Tables"]["data_versions"]["Row"];
 export type OrganizationMember = Database["public"]["Tables"]["organization_members"]["Row"];
+export type DataEntry = Database["public"]["Tables"]["data_entries"]["Row"];
 
 // Version history item type
 export interface VersionHistoryItem {

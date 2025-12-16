@@ -65,7 +65,7 @@ export default function ForgotPasswordPage() {
       toast.success("E-posta gönderildi", {
         description: "Şifre sıfırlama linki e-posta adresinize gönderildi.",
       });
-    } catch (error) {
+    } catch {
       toast.error("Bir hata oluştu", {
         description: "Lütfen tekrar deneyin",
       });

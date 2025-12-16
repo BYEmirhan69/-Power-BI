@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * API Route: Validate Data
  * Veriyi doğrular ve temizler
@@ -12,7 +13,7 @@ import type { ColumnInfo, ValidationRule } from "@/types/data-collection.types";
 export async function POST(request: NextRequest) {
   try {
     // Auth kontrolü
-    const supabase = await createClient();
+    const supabase = await createClient() as any;
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {

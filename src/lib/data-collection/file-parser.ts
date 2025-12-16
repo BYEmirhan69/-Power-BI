@@ -383,7 +383,7 @@ export class FileParserService {
   /**
    * String'in tarih olup olmadığını kontrol eder
    */
-  private isDateString(value: string, formats: string[]): boolean {
+  private isDateString(value: string, _formats: string[]): boolean {
     // Basit tarih pattern'leri
     const datePatterns = [
       /^\d{4}-\d{2}-\d{2}$/, // YYYY-MM-DD

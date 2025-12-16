@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * API Route: Test URL for Scraping
  * URL'in scraping için uygunluğunu test eder
@@ -10,7 +11,7 @@ import { createClient } from "@/lib/supabase/server";
 export async function POST(request: NextRequest) {
   try {
     // Auth kontrolü
-    const supabase = await createClient();
+    const supabase = await createClient() as any;
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {

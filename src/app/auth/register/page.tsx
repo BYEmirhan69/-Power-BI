@@ -85,7 +85,7 @@ export default function RegisterPage() {
       });
 
       router.push("/auth/verify-email");
-    } catch (error) {
+    } catch {
       toast.error("Bir hata oluştu", {
         description: "Lütfen tekrar deneyin",
       });

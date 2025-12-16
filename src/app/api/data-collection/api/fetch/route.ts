@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * API Route: Fetch Data from External API
  * Harici API'den veri çeker
@@ -11,7 +12,7 @@ import { createClient } from "@/lib/supabase/server";
 export async function POST(request: NextRequest) {
   try {
     // Auth kontrolü
-    const supabase = await createClient();
+    const supabase = await createClient() as any;
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
