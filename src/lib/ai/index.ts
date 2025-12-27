@@ -12,3 +12,18 @@ export type {
   NormalizationResult,
   NormalizationChange,
 } from "./csv-normalizer";
+
+// AI Features - Grafik önerisi, anomali tespiti, NL-to-Chart
+export { AIFeaturesService, aiFeaturesService } from "./ai-service";
+export type {
+  ChartType,
+  DataType,
+  AnomalySeverity,
+  SuggestionStatus,
+  DataColumn,
+  DataAnalysis,
+  ChartRecommendation,
+  AnomalyDetection,
+  NLQuery,
+  AISuggestion,
+} from "./ai-service";

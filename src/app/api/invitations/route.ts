@@ -1,11 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { type NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 
 // Davetleri listele
 export async function GET() {
   try {
     const supabase = await createClient() as any;
+    const adminClient = createAdminClient() as any;
 
     const {
       data: { user },
@@ -15,8 +16,8 @@ export async function GET() {
       return NextResponse.json({ error: "Yetkisiz erişim" }, { status: 401 });
     }
 
-    // Kullanıcının profilini al
-    const { data: currentProfile } = await supabase
+    // Kullanıcının profilini al (admin client ile RLS bypass)
+    const { data: currentProfile } = await adminClient
       .from("profiles")
       .select("*")
       .eq("id", user.id)
@@ -36,8 +37,8 @@ export async function GET() {
       );
     }
 
-    // Organizasyondaki davetleri al
-    const { data: invitations, error: invitationsError } = await supabase
+    // Organizasyondaki davetleri al (admin client ile)
+    const { data: invitations, error: invitationsError } = await adminClient
       .from("invitations")
       .select(`
         *,
@@ -68,6 +69,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient() as any;
+    const adminClient = createAdminClient() as any;
     const body = await request.json();
     const { email, role } = body;
 
@@ -95,8 +97,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Yetkisiz erişim" }, { status: 401 });
     }
 
-    // Kullanıcının profilini al
-    const { data: currentProfile } = await supabase
+    // Kullanıcının profilini al (admin client ile RLS bypass)
+    const { data: currentProfile } = await adminClient
       .from("profiles")
       .select("*")
       .eq("id", user.id)
@@ -116,8 +118,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Bu email zaten organizasyonda mı kontrol et
-    const { data: existingUser } = await supabase
+    // Bu email zaten organizasyonda mı kontrol et (admin client ile)
+    const { data: existingUser } = await adminClient
       .from("profiles")
       .select("id")
       .eq("email", email.toLowerCase())
@@ -131,8 +133,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Bekleyen davet var mı kontrol et
-    const { data: existingInvitation } = await supabase
+    // Bekleyen davet var mı kontrol et (admin client ile)
+    const { data: existingInvitation } = await adminClient
       .from("invitations")
       .select("id")
       .eq("email", email.toLowerCase())
@@ -147,15 +149,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Organizasyon bilgisini al
-    const { data: organization } = await supabase
+    // Organizasyon bilgisini al (admin client ile)
+    const { data: organization } = await adminClient
       .from("organizations")
       .select("name")
       .eq("id", currentProfile.organization_id)
       .single();
 
-    // Davet oluştur
-    const { data: invitation, error: createError } = await supabase
+    // Davet oluştur (admin client ile)
+    const { data: invitation, error: createError } = await adminClient
       .from("invitations")
       .insert({
         organization_id: currentProfile.organization_id,
@@ -179,8 +181,8 @@ export async function POST(request: NextRequest) {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
     const inviteLink = `${baseUrl}/auth/accept-invite?token=${invitation.token}`;
 
-    // Activity log ekle
-    await supabase.from("activity_logs").insert({
+    // Activity log ekle (admin client ile)
+    await adminClient.from("activity_logs").insert({
       user_id: user.id,
       organization_id: currentProfile.organization_id,
       action: "create_invitation",
@@ -197,8 +199,8 @@ export async function POST(request: NextRequest) {
     // NOT: Supabase'in dahili SMTP'si sadece proje ekibine mail gönderebilir
     // Üretim ortamında özel SMTP yapılandırması gerekli
     try {
-      // Supabase Auth inviteUserByEmail kullanarak davet gönder
-      const { error: inviteError } = await supabase.auth.admin.inviteUserByEmail(
+      // Supabase Auth inviteUserByEmail kullanarak davet gönder (admin client gerekli)
+      const { error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(
         email.toLowerCase(),
         {
           redirectTo: inviteLink,
