@@ -14,12 +14,30 @@ interface Dataset {
   schema: any;
   row_count: number;
   organization_id: string;
+  file_url: string | null;
 }
 
 interface Profile {
   id: string;
   organization_id: string;
   [key: string]: any;
+}
+
+// data_entries tablosunun var olup olmadığını kontrol et
+async function checkDataEntriesTableExists(adminClient: any): Promise<boolean> {
+  try {
+    const { error } = await adminClient
+      .from("data_entries")
+      .select("id")
+      .limit(1);
+    
+    if (error?.code === "PGRST205" || error?.code === "42P01") {
+      return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 // Dataset verilerini getir
@@ -54,7 +72,7 @@ export async function GET(
     // Dataset'in bu organizasyona ait olduğunu kontrol et
     const { data: dataset, error: datasetError } = await adminClient
       .from("datasets")
-      .select("id, name, schema, row_count, organization_id")
+      .select("id, name, schema, row_count, organization_id, file_url")
       .eq("id", id)
       .eq("organization_id", profile.organization_id)
       .is("deleted_at", null)
@@ -71,42 +89,43 @@ export async function GET(
     const orderBy = searchParams.get("orderBy") || "row_index";
     const orderDir = searchParams.get("orderDir") !== "desc";
 
-    // Data entries'leri al
-    const { data: entries, error: entriesError, count } = await adminClient
-      .from("data_entries")
-      .select("row_index, data", { count: "exact" })
-      .eq("dataset_id", id)
-      .order(orderBy, { ascending: orderDir })
-      .range(offset, offset + limit - 1) as { data: DataEntry[] | null; error: any; count: number | null };
+    // data_entries tablosu var mı kontrol et
+    const hasDataEntriesTable = await checkDataEntriesTableExists(adminClient);
 
-    // Tablo bulunamadı veya başka hata durumunda boş veri dön
-    if (entriesError) {
-      // PGRST205: Tablo bulunamadı - migration çalıştırılmamış olabilir
-      if (entriesError.code === "PGRST205") {
-        console.warn("data_entries tablosu bulunamadı. Migration çalıştırılmalı.");
-        return NextResponse.json({
-          success: true,
-          dataset: {
-            id: dataset.id,
-            name: dataset.name,
-            schema: dataset.schema,
-            row_count: 0,
-          },
-          data: [],
-          pagination: {
-            total: 0,
-            limit,
-            offset,
-            hasMore: false,
-          },
-        });
+    let data: Record<string, any>[] = [];
+    let total = 0;
+
+    if (hasDataEntriesTable) {
+      // Data entries'leri al
+      const { data: entries, error: entriesError, count } = await adminClient
+        .from("data_entries")
+        .select("row_index, data", { count: "exact" })
+        .eq("dataset_id", id)
+        .order(orderBy, { ascending: orderDir })
+        .range(offset, offset + limit - 1) as { data: DataEntry[] | null; error: any; count: number | null };
+
+      if (entriesError && entriesError.code !== "PGRST205") {
+        console.error("Data entries getirme hatası:", entriesError);
       }
-      console.error("Data entries getirme hatası:", entriesError);
-      return NextResponse.json({ error: "Veriler alınamadı" }, { status: 500 });
+
+      if (entries && entries.length > 0) {
+        data = entries.map((entry) => entry.data);
+        total = count || 0;
+      }
     }
 
-    // Data'yı düz array formatına çevir
-    const data = entries?.map((entry) => entry.data) || [];
+    // data_entries'den veri gelmezse, file_url'den oku (fallback)
+    if (data.length === 0 && dataset.file_url) {
+      try {
+        const rawData = JSON.parse(dataset.file_url);
+        if (Array.isArray(rawData)) {
+          total = rawData.length;
+          data = rawData.slice(offset, offset + limit);
+        }
+      } catch (parseError) {
+        console.warn("file_url parse hatası:", parseError);
+      }
+    }
 
     return NextResponse.json({
       success: true,
@@ -114,14 +133,14 @@ export async function GET(
         id: dataset.id,
         name: dataset.name,
         schema: dataset.schema,
-        row_count: dataset.row_count,
+        row_count: dataset.row_count || total,
       },
       data,
       pagination: {
-        total: count || 0,
+        total: total || dataset.row_count || 0,
         limit,
         offset,
-        hasMore: (count || 0) > offset + limit,
+        hasMore: total > offset + limit,
       },
     });
   } catch (error) {

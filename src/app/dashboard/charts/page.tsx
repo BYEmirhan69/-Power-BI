@@ -27,10 +27,12 @@ import {
   LayoutGrid,
   List,
   Copy,
-  Check
+  Check,
+  ChevronRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MiniChart } from "@/components/charts/mini-chart";
+import { ChartCard } from "@/components/charts/chart-card";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -616,7 +618,13 @@ export default function ChartsPage() {
                     </p>
                   )}
                   <div className="h-32 rounded-lg bg-muted/30 mb-3 overflow-hidden p-2">
-                    <MiniChart type={chart.type} chartId={chart.id} height={112} />
+                    <ChartCard 
+                      chartId={chart.id} 
+                      chartType={chart.type} 
+                      datasetId={chart.dataset_id}
+                      config={chart.config}
+                      height={112} 
+                    />
                   </div>
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <div className="flex items-center gap-3">
@@ -738,7 +746,7 @@ export default function ChartsPage() {
 
       {/* Create Dialog */}
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-        <DialogContent className="sm:max-w-[550px]">
+        <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Yeni Grafik Oluştur</DialogTitle>
             <DialogDescription>
@@ -851,83 +859,98 @@ export default function ChartsPage() {
                         </SelectContent>
                       </Select>
 
-                      {/* Dataset seçildiyse kolon seçicileri göster */}
+                      {/* Dataset seçildiyse otomatik önizleme göster */}
                       {formData.dataset_id && (
                         <>
                           {loadingDatasetPreview ? (
-                            <div className="flex items-center justify-center py-4">
-                              <RefreshCw className="h-5 w-5 animate-spin text-muted-foreground" />
+                            <div className="flex items-center justify-center py-8">
+                              <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
                               <span className="ml-2 text-sm text-muted-foreground">Veri yükleniyor...</span>
                             </div>
-                          ) : datasetSchema.length > 0 ? (
-                            <div className="space-y-3">
-                              <div className="grid grid-cols-2 gap-3">
-                                <div className="space-y-1">
-                                  <Label className="text-xs">X Ekseni (Etiketler)</Label>
-                                  <Select 
-                                    value={selectedXColumn} 
-                                    onValueChange={setSelectedXColumn}
-                                  >
-                                    <SelectTrigger className="h-9">
-                                      <SelectValue placeholder="Kolon seçin" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {datasetSchema.map((col: { name: string; type: string }) => (
-                                        <SelectItem key={col.name} value={col.name}>
-                                          <div className="flex items-center gap-2">
-                                            <Badge variant="outline" className="text-[10px] px-1">
-                                              {col.type}
-                                            </Badge>
-                                            {col.name}
-                                          </div>
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
+                          ) : datasetSchema.length > 0 && datasetPreviewData.length > 0 ? (
+                            <div className="space-y-4">
+                              {/* Otomatik Grafik Önizleme - Değerler ile */}
+                              <div className="rounded-lg border bg-gradient-to-br from-muted/30 to-muted/10 p-4">
+                                <div className="flex items-center justify-between mb-3">
+                                  <div>
+                                    <p className="text-sm font-medium">Grafik Önizleme</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {datasetPreviewData.length} satır • X: {effectiveXColumn} • Y: {effectiveYColumn}
+                                    </p>
+                                  </div>
+                                  <Badge variant="secondary" className="text-xs">
+                                    Otomatik
+                                  </Badge>
                                 </div>
-                                <div className="space-y-1">
-                                  <Label className="text-xs">Y Ekseni (Değerler)</Label>
-                                  <Select 
-                                    value={selectedYColumn} 
-                                    onValueChange={setSelectedYColumn}
-                                  >
-                                    <SelectTrigger className="h-9">
-                                      <SelectValue placeholder="Kolon seçin" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {datasetSchema.map((col: { name: string; type: string }) => (
-                                        <SelectItem key={col.name} value={col.name}>
-                                          <div className="flex items-center gap-2">
-                                            <Badge variant="outline" className="text-[10px] px-1">
-                                              {col.type}
-                                            </Badge>
-                                            {col.name}
-                                          </div>
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
+                                <div className="h-52 bg-background/50 rounded-lg p-2">
+                                  <MiniChart
+                                    type={formData.type}
+                                    data={datasetPreviewData.slice(0, 30).map((row: Record<string, unknown>) => Number(row[effectiveYColumn]) || 0)}
+                                    labels={datasetPreviewData.slice(0, 30).map((row: Record<string, unknown>) => String(row[effectiveXColumn] || ''))}
+                                    height={192}
+                                    showTooltip={true}
+                                    showAxes={true}
+                                  />
                                 </div>
                               </div>
 
-                              {/* Grafik Önizleme */}
-                              {effectiveXColumn && effectiveYColumn && datasetPreviewData.length > 0 && (
-                                <div className="rounded-lg border bg-muted/30 p-3">
-                                  <p className="text-xs text-muted-foreground mb-2">
-                                    Önizleme ({datasetPreviewData.length} satır)
-                                  </p>
-                                  <div className="h-32">
-                                    <MiniChart
-                                      type={formData.type}
-                                      data={datasetPreviewData.slice(0, 20).map((row: Record<string, unknown>) => Number(row[effectiveYColumn]) || 0)}
-                                      labels={datasetPreviewData.slice(0, 20).map((row: Record<string, unknown>) => String(row[effectiveXColumn] || ''))}
-                                      height={120}
-                                    />
+                              {/* Kolon Seçiciler - Opsiyonel (Detaylı Ayar) */}
+                              <details className="group">
+                                <summary className="flex items-center gap-2 cursor-pointer text-xs text-muted-foreground hover:text-foreground transition-colors">
+                                  <ChevronRight className="h-3 w-3 transition-transform group-open:rotate-90" />
+                                  Kolon ayarlarını değiştir (isteğe bağlı)
+                                </summary>
+                                <div className="mt-3 grid grid-cols-2 gap-3">
+                                  <div className="space-y-1">
+                                    <Label className="text-xs">X Ekseni (Etiketler)</Label>
+                                    <Select 
+                                      value={effectiveXColumn} 
+                                      onValueChange={setSelectedXColumn}
+                                    >
+                                      <SelectTrigger className="h-9">
+                                        <SelectValue placeholder="Kolon seçin" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {datasetSchema.map((col: { name: string; type: string }) => (
+                                          <SelectItem key={col.name} value={col.name}>
+                                            <div className="flex items-center gap-2">
+                                              <Badge variant="outline" className="text-[10px] px-1">
+                                                {col.type}
+                                              </Badge>
+                                              {col.name}
+                                            </div>
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                  <div className="space-y-1">
+                                    <Label className="text-xs">Y Ekseni (Değerler)</Label>
+                                    <Select 
+                                      value={effectiveYColumn} 
+                                      onValueChange={setSelectedYColumn}
+                                    >
+                                      <SelectTrigger className="h-9">
+                                        <SelectValue placeholder="Kolon seçin" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {datasetSchema.map((col: { name: string; type: string }) => (
+                                          <SelectItem key={col.name} value={col.name}>
+                                            <div className="flex items-center gap-2">
+                                              <Badge variant="outline" className="text-[10px] px-1">
+                                                {col.type}
+                                              </Badge>
+                                              {col.name}
+                                            </div>
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
                                   </div>
                                 </div>
-                              )}
+                              </details>
                             </div>
-                          ) : (
+                          ) : datasetSchema.length > 0 ? (
                             <div className="rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950 p-3">
                               <div className="flex items-start gap-2">
                                 <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5" />
@@ -936,7 +959,7 @@ export default function ChartsPage() {
                                 </p>
                               </div>
                             </div>
-                          )}
+                          ) : null}
                         </>
                       )}
                     </>
@@ -968,7 +991,7 @@ export default function ChartsPage() {
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="sm:max-w-[550px]">
+        <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Grafiği Düzenle</DialogTitle>
             <DialogDescription>
@@ -1081,83 +1104,98 @@ export default function ChartsPage() {
                         </SelectContent>
                       </Select>
 
-                      {/* Dataset seçildiyse kolon seçicileri göster */}
+                      {/* Dataset seçildiyse otomatik önizleme göster */}
                       {formData.dataset_id && (
                         <>
                           {loadingDatasetPreview ? (
-                            <div className="flex items-center justify-center py-4">
-                              <RefreshCw className="h-5 w-5 animate-spin text-muted-foreground" />
+                            <div className="flex items-center justify-center py-8">
+                              <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
                               <span className="ml-2 text-sm text-muted-foreground">Veri yükleniyor...</span>
                             </div>
-                          ) : datasetSchema.length > 0 ? (
-                            <div className="space-y-3">
-                              <div className="grid grid-cols-2 gap-3">
-                                <div className="space-y-1">
-                                  <Label className="text-xs">X Ekseni (Etiketler)</Label>
-                                  <Select 
-                                    value={selectedXColumn} 
-                                    onValueChange={setSelectedXColumn}
-                                  >
-                                    <SelectTrigger className="h-9">
-                                      <SelectValue placeholder="Kolon seçin" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {datasetSchema.map((col: { name: string; type: string }) => (
-                                        <SelectItem key={col.name} value={col.name}>
-                                          <div className="flex items-center gap-2">
-                                            <Badge variant="outline" className="text-[10px] px-1">
-                                              {col.type}
-                                            </Badge>
-                                            {col.name}
-                                          </div>
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
+                          ) : datasetSchema.length > 0 && datasetPreviewData.length > 0 ? (
+                            <div className="space-y-4">
+                              {/* Otomatik Grafik Önizleme - Değerler ile */}
+                              <div className="rounded-lg border bg-gradient-to-br from-muted/30 to-muted/10 p-4">
+                                <div className="flex items-center justify-between mb-3">
+                                  <div>
+                                    <p className="text-sm font-medium">Grafik Önizleme</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {datasetPreviewData.length} satır • X: {effectiveXColumn} • Y: {effectiveYColumn}
+                                    </p>
+                                  </div>
+                                  <Badge variant="secondary" className="text-xs">
+                                    Otomatik
+                                  </Badge>
                                 </div>
-                                <div className="space-y-1">
-                                  <Label className="text-xs">Y Ekseni (Değerler)</Label>
-                                  <Select 
-                                    value={selectedYColumn} 
-                                    onValueChange={setSelectedYColumn}
-                                  >
-                                    <SelectTrigger className="h-9">
-                                      <SelectValue placeholder="Kolon seçin" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {datasetSchema.map((col: { name: string; type: string }) => (
-                                        <SelectItem key={col.name} value={col.name}>
-                                          <div className="flex items-center gap-2">
-                                            <Badge variant="outline" className="text-[10px] px-1">
-                                              {col.type}
-                                            </Badge>
-                                            {col.name}
-                                          </div>
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
+                                <div className="h-52 bg-background/50 rounded-lg p-2">
+                                  <MiniChart
+                                    type={formData.type}
+                                    data={datasetPreviewData.slice(0, 30).map((row: Record<string, unknown>) => Number(row[effectiveYColumn]) || 0)}
+                                    labels={datasetPreviewData.slice(0, 30).map((row: Record<string, unknown>) => String(row[effectiveXColumn] || ''))}
+                                    height={192}
+                                    showTooltip={true}
+                                    showAxes={true}
+                                  />
                                 </div>
                               </div>
 
-                              {/* Grafik Önizleme */}
-                              {effectiveXColumn && effectiveYColumn && datasetPreviewData.length > 0 && (
-                                <div className="rounded-lg border bg-muted/30 p-3">
-                                  <p className="text-xs text-muted-foreground mb-2">
-                                    Önizleme ({datasetPreviewData.length} satır)
-                                  </p>
-                                  <div className="h-32">
-                                    <MiniChart
-                                      type={formData.type}
-                                      data={datasetPreviewData.slice(0, 20).map((row: Record<string, unknown>) => Number(row[effectiveYColumn]) || 0)}
-                                      labels={datasetPreviewData.slice(0, 20).map((row: Record<string, unknown>) => String(row[effectiveXColumn] || ''))}
-                                      height={120}
-                                    />
+                              {/* Kolon Seçiciler - Opsiyonel (Detaylı Ayar) */}
+                              <details className="group">
+                                <summary className="flex items-center gap-2 cursor-pointer text-xs text-muted-foreground hover:text-foreground transition-colors">
+                                  <ChevronRight className="h-3 w-3 transition-transform group-open:rotate-90" />
+                                  Kolon ayarlarını değiştir (isteğe bağlı)
+                                </summary>
+                                <div className="mt-3 grid grid-cols-2 gap-3">
+                                  <div className="space-y-1">
+                                    <Label className="text-xs">X Ekseni (Etiketler)</Label>
+                                    <Select 
+                                      value={effectiveXColumn} 
+                                      onValueChange={setSelectedXColumn}
+                                    >
+                                      <SelectTrigger className="h-9">
+                                        <SelectValue placeholder="Kolon seçin" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {datasetSchema.map((col: { name: string; type: string }) => (
+                                          <SelectItem key={col.name} value={col.name}>
+                                            <div className="flex items-center gap-2">
+                                              <Badge variant="outline" className="text-[10px] px-1">
+                                                {col.type}
+                                              </Badge>
+                                              {col.name}
+                                            </div>
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                  <div className="space-y-1">
+                                    <Label className="text-xs">Y Ekseni (Değerler)</Label>
+                                    <Select 
+                                      value={effectiveYColumn} 
+                                      onValueChange={setSelectedYColumn}
+                                    >
+                                      <SelectTrigger className="h-9">
+                                        <SelectValue placeholder="Kolon seçin" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {datasetSchema.map((col: { name: string; type: string }) => (
+                                          <SelectItem key={col.name} value={col.name}>
+                                            <div className="flex items-center gap-2">
+                                              <Badge variant="outline" className="text-[10px] px-1">
+                                                {col.type}
+                                              </Badge>
+                                              {col.name}
+                                            </div>
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
                                   </div>
                                 </div>
-                              )}
+                              </details>
                             </div>
-                          ) : (
+                          ) : datasetSchema.length > 0 ? (
                             <div className="rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950 p-3">
                               <div className="flex items-start gap-2">
                                 <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5" />
@@ -1166,7 +1204,7 @@ export default function ChartsPage() {
                                 </p>
                               </div>
                             </div>
-                          )}
+                          ) : null}
                         </>
                       )}
                     </>

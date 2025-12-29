@@ -12,3 +12,4 @@ export * from "./embed-generator";
 export * from "./supabase-charts";
 export * from "./realtime-chart-demo";
 export * from "./mini-chart";
+export * from "./chart-card";

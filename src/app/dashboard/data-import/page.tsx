@@ -274,28 +274,34 @@ export default function DataImportPage() {
           <DataPreview
             data={previewResult.preview}
             columns={previewResult.columns}
-            pageSize={100}
-            pageSizeOptions={[25, 50, 100, 250, 500, 1000]}
-            maxHeight="500px"
+            pageSize={50}
+            pageSizeOptions={[25, 50, 100, 250, 500]}
+            maxHeight="calc(100vh - 400px)"
           />
 
-          <div className="flex justify-end gap-4">
-            <Button variant="outline" onClick={() => goToStep("source")}>
-              Geri
-            </Button>
-            <Button onClick={handleValidate} disabled={isValidating}>
-              {isValidating ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Doğrulanıyor...
-                </>
-              ) : (
-                <>
-                  Doğrula ve Devam Et
-                  <ArrowRight className="h-4 w-4 ml-2" />
-                </>
-              )}
-            </Button>
+          <div className="flex justify-between items-center p-4 bg-muted/30 rounded-lg border">
+            <div className="text-sm text-muted-foreground">
+              <span className="font-medium text-foreground">{previewResult.totalRows || previewResult.preview.length}</span> satır ve{" "}
+              <span className="font-medium text-foreground">{previewResult.columns.length}</span> kolon bulundu
+            </div>
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={() => goToStep("source")}>
+                Geri
+              </Button>
+              <Button onClick={handleValidate} disabled={isValidating} size="lg">
+                {isValidating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Doğrulanıyor...
+                  </>
+                ) : (
+                  <>
+                    Doğrula ve Devam Et
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </div>
       )}
@@ -361,9 +367,9 @@ export default function DataImportPage() {
             data={validationResult.cleanedData || []}
             columns={previewResult.columns}
             classification={classification}
-            pageSize={100}
-            pageSizeOptions={[25, 50, 100, 250, 500, 1000]}
-            maxHeight="500px"
+            pageSize={50}
+            pageSizeOptions={[25, 50, 100, 250, 500]}
+            maxHeight="calc(100vh - 500px)"
           />
 
           <div className="flex justify-end gap-4">

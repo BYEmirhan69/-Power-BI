@@ -202,91 +202,132 @@ export function DataPreview({
         </div>
       </CardHeader>
 
-      <CardContent>
-        {/* Column Info */}
-        <div className="mb-4 flex flex-wrap gap-2">
-          {visibleColumns.map((col) => (
-            <div
-              key={col.name}
-              className="flex items-center gap-1 text-xs"
-              title={`Boş: ${col.nullCount}, Benzersiz: ${col.uniqueCount}`}
-            >
-              <span className="font-medium">{col.name}:</span>
-              <Badge variant="secondary" className={cn("text-xs", TYPE_COLORS[col.inferredType])}>
-                {col.inferredType}
-              </Badge>
-              {col.nullCount > 0 && (
-                <span className="text-muted-foreground">
-                  ({col.nullCount} boş)
-                </span>
-              )}
+      <CardContent className="space-y-4">
+        {/* Column Info - Collapsible */}
+        <details className="group">
+          <summary className="flex items-center gap-2 cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+            <ChevronRight className="h-4 w-4 transition-transform group-open:rotate-90" />
+            Kolon Bilgileri ({visibleColumns.length} kolon)
+          </summary>
+          <div className="mt-3 p-3 bg-muted/30 rounded-lg">
+            <div className="flex flex-wrap gap-3">
+              {visibleColumns.map((col) => (
+                <div
+                  key={col.name}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-background rounded-md border text-xs"
+                  title={`Boş: ${col.nullCount}, Benzersiz: ${col.uniqueCount}`}
+                >
+                  <span className="font-semibold">{col.name}</span>
+                  <Badge variant="secondary" className={cn("text-[10px]", TYPE_COLORS[col.inferredType])}>
+                    {col.inferredType}
+                  </Badge>
+                  {col.nullCount > 0 && (
+                    <span className="text-muted-foreground text-[10px]">
+                      {col.nullCount} boş
+                    </span>
+                  )}
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </div>
+        </details>
 
         {/* Table */}
-        <ScrollArea className="rounded-md border" style={{ maxHeight }}>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-12 text-center">#</TableHead>
-                {visibleColumns.map((col) => (
-                  <TableHead key={col.name} className="min-w-[120px]">
-                    <div className="flex flex-col gap-1">
-                      <span>{col.name}</span>
-                      <Badge
-                        variant="outline"
-                        className={cn("text-[10px] w-fit", TYPE_COLORS[col.inferredType])}
-                      >
-                        {col.inferredType}
-                      </Badge>
-                    </div>
-                  </TableHead>
-                ))}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paginatedData.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={visibleColumns.length + 1}
-                    className="text-center text-muted-foreground py-8"
-                  >
-                    {searchTerm ? "Sonuç bulunamadı" : "Veri yok"}
-                  </TableCell>
+        <div className="rounded-lg border overflow-hidden">
+          <ScrollArea style={{ maxHeight }}>
+            <Table>
+              <TableHeader className="sticky top-0 z-10">
+                <TableRow className="bg-muted/80 hover:bg-muted/80 backdrop-blur-sm">
+                  <TableHead className="w-16 text-center font-bold text-foreground border-r bg-muted/80">#</TableHead>
+                  {visibleColumns.map((col, colIndex) => (
+                    <TableHead 
+                      key={col.name} 
+                      className={cn(
+                        "min-w-[140px] font-semibold text-foreground bg-muted/80",
+                        colIndex < visibleColumns.length - 1 && "border-r"
+                      )}
+                    >
+                      <div className="flex flex-col gap-1.5 py-1">
+                        <span className="text-sm">{col.name}</span>
+                        <Badge
+                          variant="secondary"
+                          className={cn("text-[10px] w-fit font-normal", TYPE_COLORS[col.inferredType])}
+                        >
+                          {col.inferredType}
+                        </Badge>
+                      </div>
+                    </TableHead>
+                  ))}
                 </TableRow>
-              ) : (
-                paginatedData.map((row, index) => (
-                  <TableRow key={index}>
-                    <TableCell className="text-center text-muted-foreground text-xs">
-                      {currentPage * pageSize + index + 1}
+              </TableHeader>
+              <TableBody>
+                {paginatedData.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={visibleColumns.length + 1}
+                      className="text-center text-muted-foreground py-12"
+                    >
+                      <div className="flex flex-col items-center gap-2">
+                        <Search className="h-8 w-8 text-muted-foreground/50" />
+                        <span>{searchTerm ? "Sonuç bulunamadı" : "Veri yok"}</span>
+                      </div>
                     </TableCell>
-                    {visibleColumns.map((col) => (
-                      <TableCell key={col.name} className="max-w-[200px] truncate">
-                        <span title={formatValue(row[col.name])}>
-                          {formatValue(row[col.name])}
-                        </span>
-                      </TableCell>
-                    ))}
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-          <ScrollBar orientation="horizontal" />
-        </ScrollArea>
+                ) : (
+                  paginatedData.map((row, index) => (
+                    <TableRow 
+                      key={index} 
+                      className={cn(
+                        "transition-colors",
+                        index % 2 === 0 ? "bg-background" : "bg-muted/30"
+                      )}
+                    >
+                      <TableCell className="text-center text-muted-foreground text-xs font-medium border-r bg-muted/20">
+                        {currentPage * pageSize + index + 1}
+                      </TableCell>
+                      {visibleColumns.map((col, colIndex) => (
+                        <TableCell 
+                          key={col.name} 
+                          className={cn(
+                            "max-w-[250px] truncate text-sm",
+                            colIndex < visibleColumns.length - 1 && "border-r border-border/50"
+                          )}
+                        >
+                          <span 
+                            title={formatValue(row[col.name])}
+                            className={cn(
+                              row[col.name] === null || row[col.name] === undefined 
+                                ? "text-muted-foreground italic" 
+                                : ""
+                            )}
+                          >
+                            {formatValue(row[col.name])}
+                          </span>
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+            <ScrollBar orientation="horizontal" />
+          </ScrollArea>
+        </div>
 
         {/* Pagination */}
         {totalPages > 0 && (
-          <div className="flex flex-wrap items-center justify-between gap-4 mt-4">
+          <div className="flex flex-wrap items-center justify-between gap-4 mt-6 p-4 bg-muted/30 rounded-lg border">
             {/* Sol: Sayfa bilgisi ve boyut seçici */}
             <div className="flex items-center gap-4">
-              <p className="text-sm text-muted-foreground">
-                Toplam <span className="font-medium">{filteredData.length}</span> satır
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-muted-foreground">Toplam</span>
+                <span className="font-bold text-foreground">{filteredData.length}</span>
+                <span className="text-muted-foreground">satır</span>
                 {filteredData.length !== data.length && (
-                  <span> (filtrelendi: {data.length})</span>
+                  <span className="text-muted-foreground text-xs">(filtrelendi: {data.length})</span>
                 )}
-              </p>
+              </div>
+              <div className="h-4 w-px bg-border" />
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground">Sayfa başına:</span>
                 <Select
@@ -296,7 +337,7 @@ export function DataPreview({
                     setCurrentPage(0);
                   }}
                 >
-                  <SelectTrigger className="h-8 w-[80px]">
+                  <SelectTrigger className="h-9 w-[90px] font-medium">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -311,10 +352,11 @@ export function DataPreview({
             </div>
 
             {/* Orta: Sayfa navigasyonu */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               <Button
                 variant="outline"
-                size="sm"
+                size="icon"
+                className="h-9 w-9"
                 onClick={() => setCurrentPage(0)}
                 disabled={currentPage === 0}
                 title="İlk sayfa"
@@ -323,7 +365,8 @@ export function DataPreview({
               </Button>
               <Button
                 variant="outline"
-                size="sm"
+                size="icon"
+                className="h-9 w-9"
                 onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
                 disabled={currentPage === 0}
                 title="Önceki sayfa"
@@ -331,7 +374,7 @@ export function DataPreview({
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-2 px-3">
                 <Input
                   type="number"
                   min={1}
@@ -343,14 +386,15 @@ export function DataPreview({
                       setCurrentPage(page);
                     }
                   }}
-                  className="h-8 w-16 text-center"
+                  className="h-9 w-16 text-center font-medium"
                 />
-                <span className="text-sm text-muted-foreground">/ {totalPages}</span>
+                <span className="text-sm text-muted-foreground font-medium">/ {totalPages}</span>
               </div>
 
               <Button
                 variant="outline"
-                size="sm"
+                size="icon"
+                className="h-9 w-9"
                 onClick={() => setCurrentPage((p) => Math.min(totalPages - 1, p + 1))}
                 disabled={currentPage === totalPages - 1}
                 title="Sonraki sayfa"
@@ -359,7 +403,8 @@ export function DataPreview({
               </Button>
               <Button
                 variant="outline"
-                size="sm"
+                size="icon"
+                className="h-9 w-9"
                 onClick={() => setCurrentPage(totalPages - 1)}
                 disabled={currentPage === totalPages - 1}
                 title="Son sayfa"
@@ -369,9 +414,10 @@ export function DataPreview({
             </div>
 
             {/* Sağ: Gösterilen aralık */}
-            <p className="text-sm text-muted-foreground">
-              {currentPage * pageSize + 1}-{Math.min((currentPage + 1) * pageSize, filteredData.length)} gösteriliyor
-            </p>
+            <div className="text-sm">
+              <span className="font-bold text-foreground">{currentPage * pageSize + 1}-{Math.min((currentPage + 1) * pageSize, filteredData.length)}</span>
+              <span className="text-muted-foreground"> gösteriliyor</span>
+            </div>
           </div>
         )}
 

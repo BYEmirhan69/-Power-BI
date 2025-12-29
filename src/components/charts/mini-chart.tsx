@@ -109,9 +109,25 @@ interface MiniChartProps {
   data?: number[];
   /** Özel etiketler (isteğe bağlı) */
   labels?: string[];
+  /** Tooltip göster */
+  showTooltip?: boolean;
+  /** Eksen etiketleri göster */
+  showAxes?: boolean;
+  /** Veri değerlerini göster */
+  showDataLabels?: boolean;
 }
 
-export function MiniChart({ type, chartId, height = 120, config: _config, data: customData, labels: customLabels }: MiniChartProps) {
+export function MiniChart({ 
+  type, 
+  chartId, 
+  height = 120, 
+  config: _config, 
+  data: customData, 
+  labels: customLabels,
+  showTooltip = false,
+  showAxes = false,
+  showDataLabels = false
+}: MiniChartProps) {
   const { theme } = useTheme();
   const isDark = theme === "dark";
 
@@ -140,14 +156,47 @@ export function MiniChart({ type, chartId, height = 120, config: _config, data: 
     maintainAspectRatio: false,
     plugins: {
       legend: { display: false },
-      tooltip: { enabled: false },
+      tooltip: { 
+        enabled: showTooltip,
+        callbacks: showTooltip ? {
+          label: function(context: { parsed: { y: number }; formattedValue: string }) {
+            return ` ${context.formattedValue || context.parsed.y}`;
+          }
+        } : undefined
+      },
+      datalabels: showDataLabels ? {
+        display: true,
+        anchor: 'end',
+        align: 'top',
+        font: { size: 10, weight: 'bold' },
+        color: isDark ? '#fff' : '#333',
+        formatter: (value: number) => value.toLocaleString('tr-TR'),
+      } : { display: false },
     },
-    scales: {
+    scales: showAxes ? {
+      x: { 
+        display: true,
+        grid: { display: false },
+        ticks: { 
+          font: { size: 9 },
+          maxRotation: 45,
+          color: isDark ? '#888' : '#666'
+        }
+      },
+      y: { 
+        display: true,
+        grid: { color: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' },
+        ticks: { 
+          font: { size: 9 },
+          color: isDark ? '#888' : '#666'
+        }
+      },
+    } : {
       x: { display: false },
       y: { display: false },
     },
     elements: {
-      point: { radius: 0 },
+      point: { radius: showDataLabels ? 3 : 0 },
       line: { borderWidth: 2 },
     },
     animation: {
