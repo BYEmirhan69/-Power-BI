@@ -6,7 +6,7 @@
  * Body: { email: string }
  */
 
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import {
   generateVerificationToken,
@@ -18,6 +18,10 @@ import {
   RATE_LIMIT_WINDOW_MS,
 } from "@/lib/auth/email-verification";
 import { sendVerificationEmail } from "@/lib/email/verification-email";
+import type { Database } from "@/types/database.types";
+
+type Profile = Database["public"]["Tables"]["profiles"]["Row"];
+type RateLimit = Database["public"]["Tables"]["verification_rate_limits"]["Row"];
 
 export async function POST(request: NextRequest) {
   try {
@@ -35,11 +39,13 @@ export async function POST(request: NextRequest) {
     const normalizedEmail = email.toLowerCase();
 
     // Kullanıcıyı bul
-    const { data: profile, error: profileError } = await supabase
+    const { data: profileData, error: profileError } = await supabase
       .from("profiles")
       .select("id, email, full_name, email_verified")
       .eq("email", normalizedEmail)
       .single();
+    
+    const profile = profileData as Pick<Profile, "id" | "email" | "full_name" | "email_verified"> | null;
 
     if (profileError || !profile) {
       // Güvenlik: Kullanıcı bulunamasa bile aynı mesajı ver
@@ -58,11 +64,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Rate limit kontrolü
-    const { data: rateLimit } = await supabase
+    const { data: rateLimitData } = await supabase
       .from("verification_rate_limits")
       .select("*")
       .eq("email", normalizedEmail)
       .single();
+    
+    const rateLimit = rateLimitData as RateLimit | null;
 
     if (rateLimit) {
       const result = checkRateLimit(
@@ -105,7 +113,7 @@ export async function POST(request: NextRequest) {
         email: normalizedEmail,
         expires_at: expiresAt.toISOString(),
         ip_address: ip,
-      });
+      } as never);
 
     if (tokenError) {
       console.error("Token kaydetme hatası:", tokenError);
@@ -133,7 +141,7 @@ export async function POST(request: NextRequest) {
           blocked_until: shouldBlock 
             ? new Date(now.getTime() + BLOCK_DURATION_MS).toISOString() 
             : null,
-        })
+        } as never)
         .eq("email", normalizedEmail);
     } else {
       await supabase
@@ -143,7 +151,7 @@ export async function POST(request: NextRequest) {
           attempts: 1,
           first_attempt_at: now.toISOString(),
           last_attempt_at: now.toISOString(),
-        });
+        } as never);
     }
 
     // Doğrulama URL'ini oluştur
@@ -166,6 +174,7 @@ export async function POST(request: NextRequest) {
       if (isDomainError) {
         return NextResponse.json(
           { 
+            success: false,
             error: "E-posta servisi test modunda. Sadece kayıtlı e-posta adresine mail gönderilebilir.",
             code: "RESEND_TEST_MODE",
             details: "Diğer adreslere mail göndermek için Resend dashboard'dan domain doğrulaması yapılmalı."
@@ -175,12 +184,10 @@ export async function POST(request: NextRequest) {
       }
       
       return NextResponse.json(
-        { error: "E-posta gönderilemedi. Lütfen tekrar deneyin." },
+        { success: false, error: "E-posta gönderilemedi. Lütfen tekrar deneyin." },
         { status: 500 }
       );
     }
-
-    console.log(`Resend verification email sent to ${normalizedEmail}, messageId: ${emailResult.id}`);
 
     return NextResponse.json({
       success: true,
@@ -189,7 +196,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Resend verification error:", error);
     return NextResponse.json(
-      { error: "Bir hata oluştu" },
+      { success: false, error: "Bir hata oluştu" },
       { status: 500 }
     );
   }

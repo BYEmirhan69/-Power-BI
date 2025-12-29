@@ -15,6 +15,7 @@
   --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
   --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-muted: var(--sidebar-muted);
   --color-sidebar: var(--sidebar);
   --color-chart-5: var(--chart-5);
   --color-chart-4: var(--chart-4);
@@ -25,6 +26,7 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -37,79 +39,164 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-highlight: var(--highlight);
+  --color-highlight-foreground: var(--highlight-foreground);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 }
 
+/* ============================================
+   MODERN BI DESIGN SYSTEM v2
+   Fluent 2 / Fabric Inspired - Premium SaaS
+   Primary: Azure | Accent: Yellow (minimal)
+   ============================================ */
+
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  
+  /* Surface & Background - Soft cool grays */
+  --background: #F7F9FC;
+  --foreground: #0B1220;
+  
+  /* Card surfaces - Elevated white */
+  --card: #FFFFFF;
+  --card-foreground: #0B1220;
+  
+  /* Popover/Dropdown */
+  --popover: #FFFFFF;
+  --popover-foreground: #0B1220;
+  
+  /* Primary - Azure Blue (main action color) */
+  --primary: #2563EB;
+  --primary-foreground: #FFFFFF;
+  
+  /* Secondary - Dark ink (outline buttons, text) */
+  --secondary: #111827;
+  --secondary-foreground: #FFFFFF;
+  
+  /* Muted surfaces */
+  --muted: #F2F5FA;
+  --muted-foreground: #5B6B82;
+  
+  /* Accent - PowerBI Yellow (ONLY for highlights/badges/metrics) */
+  --accent: #FEF3C7;
+  --accent-foreground: #92400E;
+  
+  /* Destructive - Clean red */
+  --destructive: #DC2626;
+  --destructive-foreground: #FFFFFF;
+  
+  /* Borders & Input */
+  --border: #E3E8F2;
+  --input: #E3E8F2;
+  --ring: #60A5FA;
+  
+  /* Semantic colors */
+  --warning: #F59E0B;
+  --warning-foreground: #0B1220;
+  --success: #10B981;
+  --success-foreground: #FFFFFF;
+  --info: #3B82F6;
+  --info-foreground: #FFFFFF;
+  
+  /* Highlight - PowerBI Yellow for metrics/badges only */
+  --highlight: #F2C811;
+  --highlight-foreground: #0B1220;
+  
+  /* Chart colors - Modern BI palette (light mode) */
+  --chart-1: #2563EB; /* Azure Blue - Primary */
+  --chart-2: #0D9488; /* Teal */
+  --chart-3: #8B5CF6; /* Violet */
+  --chart-4: #F97316; /* Orange */
+  --chart-5: #EAB308; /* Yellow - minimal use */
+  
+  /* Sidebar - Light theme */
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #0B1220;
+  --sidebar-primary: #2563EB;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #EFF6FF;
+  --sidebar-accent-foreground: #1E40AF;
+  --sidebar-muted: #5B6B82;
+  --sidebar-border: #E3E8F2;
+  --sidebar-ring: #60A5FA;
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  /* Surface & Background - Deep navy */
+  --background: #0B1020;
+  --foreground: #E6EDF7;
+  
+  /* Card surfaces - Elevated dark */
+  --card: #0F172A;
+  --card-foreground: #E6EDF7;
+  
+  /* Popover/Dropdown */
+  --popover: #0F172A;
+  --popover-foreground: #E6EDF7;
+  
+  /* Primary - Light Azure (visible on dark) */
+  --primary: #60A5FA;
+  --primary-foreground: #0B1020;
+  
+  /* Secondary - Lighter surface */
+  --secondary: #1E293B;
+  --secondary-foreground: #E6EDF7;
+  
+  /* Muted surfaces */
+  --muted: #111C34;
+  --muted-foreground: #9AA9C2;
+  
+  /* Accent - PowerBI Yellow (subtle in dark) */
+  --accent: rgba(234, 179, 8, 0.15);
+  --accent-foreground: #FCD34D;
+  
+  /* Destructive - Softer in dark */
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+  
+  /* Borders & Input */
+  --border: rgba(255, 255, 255, 0.10);
+  --input: rgba(255, 255, 255, 0.10);
+  --ring: #93C5FD;
+  
+  /* Semantic colors - Dark mode optimized */
+  --warning: #FBBF24;
+  --warning-foreground: #0B1020;
+  --success: #34D399;
+  --success-foreground: #0B1020;
+  --info: #60A5FA;
+  --info-foreground: #0B1020;
+  
+  /* Highlight - PowerBI Yellow for metrics/badges */
+  --highlight: #EAB308;
+  --highlight-foreground: #0B1020;
+  
+  /* Chart colors - Modern BI (dark mode optimized) */
+  --chart-1: #60A5FA; /* Light Azure */
+  --chart-2: #2DD4BF; /* Bright Teal */
+  --chart-3: #A78BFA; /* Light Violet */
+  --chart-4: #FB923C; /* Light Orange */
+  --chart-5: #FBBF24; /* Golden Yellow */
+  
+  /* Sidebar - Dark theme */
+  --sidebar: #0F172A;
+  --sidebar-foreground: #E6EDF7;
+  --sidebar-primary: #60A5FA;
+  --sidebar-primary-foreground: #0B1020;
+  --sidebar-accent: rgba(96, 165, 250, 0.1);
+  --sidebar-accent-foreground: #93C5FD;
+  --sidebar-muted: #9AA9C2;
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+  --sidebar-ring: #93C5FD;
 }
 
 @layer base {
@@ -117,6 +204,11 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+  }
+  
+  /* Focus ring WCAG AA compliance */
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
   }
 }

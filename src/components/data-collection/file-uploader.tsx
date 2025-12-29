@@ -2,7 +2,7 @@
 
 /**
  * File Uploader Component
- * CSV/Excel dosyası yükleme, önizleme ve AI ile normalizasyon
+ * CSV/Excel dosyası yükleme, önizleme ve AI (GROQ Llama 3.3) ile normalizasyon
  */
 
 import { useState, useCallback } from "react";
@@ -11,6 +11,7 @@ import { Upload, FileSpreadsheet, X, Loader2, CheckCircle, AlertCircle, Sparkles
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 // Inline Progress component to avoid module resolution issues
 interface ProgressProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -154,11 +155,23 @@ export function FileUploader({
       setNormalizationResult(normResult);
       setStatus("normalized");
       onNormalizationComplete?.(normResult);
+
+      // Kullanıcıya başarı bildirimi göster
+      toast.success("✨ Dosya AI ile Düzenlendi!", {
+        description: `${normResult.changes.length} değişiklik yapıldı (${normResult.processingTime}ms)`,
+        duration: 5000,
+      });
     } catch (err) {
       const errorMessage = (err as Error).message;
       setStatus("error");
       setError(errorMessage);
       onError?.(errorMessage);
+
+      // Kullanıcıya hata bildirimi göster
+      toast.error("AI Düzenleme Başarısız", {
+        description: errorMessage,
+        duration: 5000,
+      });
     }
   };
 
@@ -336,7 +349,7 @@ export function FileUploader({
               </div>
             </div>
 
-            {/* AI Analiz Sonucu */}
+            {/* AI Analiz Sonucu - Sorun varsa uyarı göster */}
             {enableAINormalization && analysisResult && analysisResult.needsAINormalization && (
               <div className="p-3 bg-amber-500/10 rounded-lg border border-amber-500/20">
                 <div className="flex items-start gap-3">
@@ -357,24 +370,28 @@ export function FileUploader({
                     </ul>
                   </div>
                 </div>
-                <Button
-                  className="w-full mt-3"
-                  onClick={() => normalizeWithAI()}
-                  variant="outline"
-                >
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  AI ile Düzenle (Grok 4.1)
-                </Button>
               </div>
             )}
 
-            {/* AI Normalizasyon yoksa manuel buton */}
+            {/* AI ile Düzenle butonu - Her zaman göster */}
+            {enableAINormalization && (
+              <Button
+                className="w-full"
+                onClick={() => normalizeWithAI()}
+                variant={analysisResult?.needsAINormalization ? "default" : "outline"}
+              >
+                <Sparkles className="h-4 w-4 mr-2" />
+                AI ile Düzenle (GROQ Llama 3.3)
+              </Button>
+            )}
+
+            {/* Sorun yoksa bilgi mesajı */}
             {enableAINormalization && analysisResult && !analysisResult.needsAINormalization && (
               <div className="p-3 bg-green-500/10 rounded-lg border border-green-500/20">
                 <div className="flex items-center gap-3">
                   <CheckCircle className="h-5 w-5 text-green-500" />
                   <p className="text-sm text-green-700 dark:text-green-300">
-                    Veri formatı standart görünüyor
+                    Veri formatı standart görünüyor, ancak yine de AI ile düzenleyebilirsiniz
                   </p>
                 </div>
               </div>
@@ -392,7 +409,7 @@ export function FileUploader({
                   AI ile Düzenleniyor...
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Grok 4.1 veriyi analiz ediyor ve düzenliyor
+                  GROQ Llama 3.3 veriyi analiz ediyor ve düzenleniyor
                 </p>
               </div>
             </div>

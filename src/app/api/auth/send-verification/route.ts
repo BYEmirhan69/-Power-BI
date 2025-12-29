@@ -6,7 +6,7 @@
  * Body: { email: string, userId: string, fullName?: string }
  */
 
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import {
   generateVerificationToken,
@@ -154,6 +154,7 @@ export async function POST(request: NextRequest) {
       if (isDomainError) {
         return NextResponse.json(
           { 
+            success: false,
             error: "E-posta servisi test modunda. Sadece kayıtlı e-posta adresine mail gönderilebilir.",
             code: "RESEND_TEST_MODE",
             details: "Diğer adreslere mail göndermek için Resend dashboard'dan domain doğrulaması yapılmalı."
@@ -163,12 +164,10 @@ export async function POST(request: NextRequest) {
       }
       
       return NextResponse.json(
-        { error: "E-posta gönderilemedi. Lütfen tekrar deneyin." },
+        { success: false, error: emailResult.error || "E-posta gönderilemedi. Lütfen tekrar deneyin." },
         { status: 500 }
       );
     }
-
-    console.log(`Verification email sent to ${email}, messageId: ${emailResult.id}`);
 
     return NextResponse.json({
       success: true,
@@ -176,8 +175,9 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Send verification error:", error);
+    const errorMessage = error instanceof Error ? error.message : "Bir hata oluştu";
     return NextResponse.json(
-      { error: "Bir hata oluştu" },
+      { success: false, error: errorMessage },
       { status: 500 }
     );
   }

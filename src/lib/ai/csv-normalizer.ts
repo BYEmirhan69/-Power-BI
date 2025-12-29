@@ -1,9 +1,9 @@
 /**
  * CSV Normalizer Service
- * Düzensiz CSV verilerini AI ile temizler ve standart hale getirir
+ * Düzensiz CSV/Excel verilerini AI (GROQ Llama) ile temizler ve standart hale getirir
  */
 
-import { OpenRouterService, type OpenRouterConfig } from "./openrouter";
+import { GroqService, type GroqConfig } from "./groq";
 import { type ColumnInfo } from "@/types/data-collection.types";
 
 export interface NormalizationOptions {
@@ -95,10 +95,17 @@ JSON formatında yanıt ver:
  * CSV verilerini AI ile normalize eden servis
  */
 export class CSVNormalizerService {
-  private openRouter: OpenRouterService;
+  private groq: GroqService;
 
   constructor(apiKey?: string) {
-    this.openRouter = new OpenRouterService(apiKey);
+    this.groq = new GroqService(apiKey);
+  }
+
+  /**
+   * GROQ API'nin yapılandırılıp yapılandırılmadığını kontrol eder
+   */
+  isConfigured(): boolean {
+    return this.groq.isConfigured();
   }
 
   /**
@@ -120,13 +127,13 @@ export class CSVNormalizerService {
       // Kullanıcı mesajını oluştur
       const userMessage = this.buildUserMessage(dataToProcess, columns, options);
 
-      // AI'a gönder
-      const config: OpenRouterConfig = {
+      // AI'a gönder (GROQ Llama 3.3 70B)
+      const config: GroqConfig = {
         temperature: 0.1, // Düşük temperature = daha tutarlı sonuç
         max_tokens: 8192,
       };
 
-      const response = await this.openRouter.chatWithSystem(
+      const response = await this.groq.chatWithSystem(
         SYSTEM_PROMPT,
         userMessage,
         config

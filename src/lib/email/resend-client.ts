@@ -60,18 +60,28 @@ export async function sendEmail(options: EmailOptions): Promise<EmailResult> {
   try {
     const resend = getResendClient();
 
-    const { data, error } = await resend.emails.send({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const emailPayload: any = {
       from: options.from || "onboarding@resend.dev",
       to: options.to,
       subject: options.subject,
-      html: options.html,
-      text: options.text,
-      replyTo: options.replyTo,
-      cc: options.cc,
-      bcc: options.bcc,
-      headers: options.headers,
-      attachments: options.attachments,
-    });
+    };
+
+    // Add optional fields only if defined
+    if (options.html) emailPayload.html = options.html;
+    if (options.text) emailPayload.text = options.text;
+    if (options.replyTo) emailPayload.replyTo = options.replyTo;
+    if (options.cc) emailPayload.cc = options.cc;
+    if (options.bcc) emailPayload.bcc = options.bcc;
+    if (options.headers) emailPayload.headers = options.headers;
+    if (options.attachments) {
+      emailPayload.attachments = options.attachments.map(att => ({
+        filename: att.filename,
+        content: att.content,
+      }));
+    }
+
+    const { data, error } = await resend.emails.send(emailPayload);
 
     if (error) {
       console.error("Email gönderme hatası:", error);

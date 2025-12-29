@@ -5,7 +5,7 @@
  * GET /api/auth/check-verification?email=...
  */
 
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 
 // Type for profile data

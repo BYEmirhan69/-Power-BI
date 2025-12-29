@@ -49,14 +49,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // API key kontrolü
-    const apiKey = process.env.OPENROUTER_API_KEY;
+    // API key kontrolü (GROQ)
+    const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) {
       return NextResponse.json(
         {
           success: false,
           error:
-            "OpenRouter API Key yapılandırılmamış. Lütfen OPENROUTER_API_KEY environment variable'ını ayarlayın.",
+            "GROQ API Key yapılandırılmamış. Lütfen GROQ_API_KEY environment variable'ını ayarlayın.",
         },
         { status: 500 }
       );

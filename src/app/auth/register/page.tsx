@@ -104,13 +104,27 @@ export default function RegisterPage() {
         }),
       });
 
-      if (!verificationResponse.ok) {
-        const errorData = await verificationResponse.json();
-        console.error("Verification email error:", errorData);
-        // Kullanıcı oluşturuldu ama email gönderilemedi - yine de devam et
-        toast.warning("Kayıt başarılı!", {
-          description: "E-posta gönderilemedi. Verify sayfasından tekrar deneyebilirsiniz.",
-        });
+      // Response body'yi parse et
+      const responseData = await verificationResponse.json().catch(() => ({}));
+      
+      if (!verificationResponse.ok || !responseData.success) {
+        // Resend test modu kontrolü - bu beklenen bir durum
+        if (responseData.code === "RESEND_TEST_MODE") {
+          toast.info("Kayıt başarılı!", {
+            description: "E-posta servisi test modunda. Hesabınız oluşturuldu, doğrulama için yöneticiyle iletişime geçin.",
+          });
+        } else if (responseData.error) {
+          // Beklenmedik hatalar için error logla
+          console.error("Verification email error:", responseData.error);
+          toast.warning("Kayıt başarılı!", {
+            description: "E-posta gönderilemedi. Verify sayfasından tekrar deneyebilirsiniz.",
+          });
+        } else {
+          // Bilinmeyen hata
+          toast.warning("Kayıt başarılı!", {
+            description: "E-posta gönderilemedi. Verify sayfasından tekrar deneyebilirsiniz.",
+          });
+        }
       } else {
         toast.success("Kayıt başarılı!", {
           description: "E-posta adresinize doğrulama linki gönderildi.",

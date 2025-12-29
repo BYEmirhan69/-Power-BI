@@ -5,7 +5,7 @@
  * GET /api/auth/verify-email?token=...
  */
 
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { hashToken, isTokenExpired } from "@/lib/auth/email-verification";
 
@@ -129,7 +129,6 @@ export async function GET(request: NextRequest) {
     }
 
     // Başarılı doğrulama
-    console.log(`Email verified for user ${tokenData.user_id}`);
     return NextResponse.redirect(
       new URL("/auth/verify-email?result=success", request.url)
     );

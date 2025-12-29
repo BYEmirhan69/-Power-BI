@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import {
   Card,
   CardContent,
@@ -7,14 +8,42 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Activity, Users } from "lucide-react";
-import {
-  ChartContainer,
-  DynamicLineChart,
-  DynamicBarChart,
-  DynamicPieChart,
-  DynamicAreaChart,
-} from "@/components/charts";
+import { ChartContainer } from "@/components/charts";
+
+// Lazy load chart components for better performance
+const DynamicLineChart = dynamic(
+  () => import("@/components/charts/line-chart").then((mod) => ({ default: mod.DynamicLineChart })),
+  { 
+    ssr: false,
+    loading: () => <Skeleton className="h-[280px] w-full rounded-lg" />
+  }
+);
+
+const DynamicBarChart = dynamic(
+  () => import("@/components/charts/bar-chart").then((mod) => ({ default: mod.DynamicBarChart })),
+  { 
+    ssr: false,
+    loading: () => <Skeleton className="h-[280px] w-full rounded-lg" />
+  }
+);
+
+const DynamicPieChart = dynamic(
+  () => import("@/components/charts/pie-chart").then((mod) => ({ default: mod.DynamicPieChart })),
+  { 
+    ssr: false,
+    loading: () => <Skeleton className="h-[280px] w-full rounded-lg" />
+  }
+);
+
+const DynamicAreaChart = dynamic(
+  () => import("@/components/charts/area-chart").then((mod) => ({ default: mod.DynamicAreaChart })),
+  { 
+    ssr: false,
+    loading: () => <Skeleton className="h-[300px] w-full rounded-lg" />
+  }
+);
 
 // Örnek veriler - Gerçek uygulamada API'den gelecek
 const monthlyData = [

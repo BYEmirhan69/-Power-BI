@@ -3,7 +3,7 @@
  * Resend ile doğrulama e-postası gönderme
  */
 
-import { sendEmail, EmailResult } from "./resend-client";
+import { sendEmail, type EmailResult } from "./resend-client";
 
 // =============================================
 // Verification Email Template

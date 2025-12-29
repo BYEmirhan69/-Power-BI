@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
+import type { Database } from "@/types/database.types";
+
+type Profile = Database["public"]["Tables"]["profiles"]["Row"];
+type Organization = Database["public"]["Tables"]["organizations"]["Row"];
 
 // Organizasyon oluştur
 export async function POST(request: Request) {
@@ -18,11 +21,13 @@ export async function POST(request: Request) {
     }
 
     // Kullanıcının profilini kontrol et
-    const { data: profile } = await adminClient
+    const { data: profileData } = await adminClient
       .from("profiles")
       .select("id, organization_id")
       .eq("id", user.id)
       .single();
+    
+    const profile = profileData as Pick<Profile, "id" | "organization_id"> | null;
 
     if (!profile) {
       return NextResponse.json({ error: "Profil bulunamadı" }, { status: 404 });
@@ -48,15 +53,17 @@ export async function POST(request: Request) {
     }
 
     // Organizasyonu oluştur
-    const { data: organization, error: orgError } = await adminClient
+    const { data: orgData, error: orgError } = await adminClient
       .from("organizations")
       .insert({
         name: name.trim(),
-      })
+      } as never)
       .select()
       .single();
+    
+    const organization = orgData as Organization | null;
 
-    if (orgError) {
+    if (orgError || !organization) {
       console.error("Organizasyon oluşturma hatası:", orgError);
       return NextResponse.json(
         { error: "Organizasyon oluşturulamadı" },
@@ -70,7 +77,7 @@ export async function POST(request: Request) {
       .update({
         organization_id: organization.id,
         role: "admin", // Organizasyonu oluşturan kullanıcı admin olur
-      })
+      } as never)
       .eq("id", user.id);
 
     if (updateError) {
@@ -82,8 +89,6 @@ export async function POST(request: Request) {
         { status: 500 }
       );
     }
-
-    console.log(`Organization created: ${organization.id} by user ${user.id}`);
 
     return NextResponse.json({
       success: true,
@@ -117,22 +122,26 @@ export async function GET() {
     }
 
     // Kullanıcının profilini al
-    const { data: profile } = await adminClient
+    const { data: profileData } = await adminClient
       .from("profiles")
       .select("organization_id")
       .eq("id", user.id)
       .single();
+    
+    const profile = profileData as Pick<Profile, "organization_id"> | null;
 
     if (!profile?.organization_id) {
       return NextResponse.json({ organization: null });
     }
 
     // Organizasyonu getir
-    const { data: organization } = await adminClient
+    const { data: orgData } = await adminClient
       .from("organizations")
       .select("*")
       .eq("id", profile.organization_id)
       .single();
+    
+    const organization = orgData as Organization | null;
 
     return NextResponse.json({ organization });
   } catch (error) {

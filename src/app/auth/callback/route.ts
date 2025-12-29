@@ -1,6 +1,8 @@
-import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import type { Database } from "@/types/database.types";
+
+type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -15,11 +17,13 @@ export async function GET(request: Request) {
       const adminClient = createAdminClient();
       
       // Kullanıcının profilini kontrol et ve güncelle
-      const { data: profile } = await adminClient
+      const { data: profileData } = await adminClient
         .from("profiles")
         .select("id, email_verified, organization_id")
         .eq("id", data.user.id)
         .single();
+      
+      const profile = profileData as Pick<Profile, "id" | "email_verified" | "organization_id"> | null;
 
       if (profile) {
         // Email doğrulandı olarak işaretle (Supabase callback'ten geldiği için)
@@ -29,10 +33,8 @@ export async function GET(request: Request) {
             .update({
               email_verified: true,
               email_verified_at: new Date().toISOString(),
-            })
+            } as never)
             .eq("id", data.user.id);
-          
-          console.log(`Email verified for user ${data.user.id}`);
         }
       }
       

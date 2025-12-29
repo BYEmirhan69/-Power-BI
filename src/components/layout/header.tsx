@@ -16,23 +16,23 @@ export function Header() {
   };
 
   return (
-    <header className="flex h-16 shrink-0 items-center justify-between gap-2 border-b px-4">
+    <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center justify-between gap-2 border-b border-border/40 bg-card/95 backdrop-blur-sm px-4">
       <div className="flex items-center gap-2">
-        <SidebarTrigger className="-ml-1" />
-        <Separator orientation="vertical" className="mr-2 h-4" />
+        <SidebarTrigger className="-ml-1 hover:bg-muted" />
+        <Separator orientation="vertical" className="mr-2 h-4 bg-border/40" />
         
-        {/* Search */}
+        {/* Search - Modern clean style */}
         <div className="relative hidden md:block">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             type="search"
             placeholder="Ara..."
-            className="w-[200px] pl-8 lg:w-[300px]"
+            className="w-[200px] pl-9 lg:w-[280px] h-9 bg-muted/40 border-border/40 focus:bg-card transition-colors"
           />
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1">
         {/* Theme Toggle */}
         <ThemeToggle />
 
