@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -46,6 +46,7 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 export default function RegisterPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const isSubmittingRef = useRef(false);
   const supabase = createClient();
 
   const form = useForm<RegisterFormValues>({
@@ -59,17 +60,22 @@ export default function RegisterPage() {
   });
 
   async function onSubmit(data: RegisterFormValues) {
+    // Duplikasyon önleme - zaten submit ediliyorsa çık
+    if (isSubmittingRef.current || isLoading) {
+      return;
+    }
+    isSubmittingRef.current = true;
     setIsLoading(true);
 
     try {
-      const { error } = await supabase.auth.signUp({
+      // 1. Supabase ile kullanıcı oluştur (email confirmation kapalı)
+      const { data: signUpData, error } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
         options: {
           data: {
             full_name: data.fullName,
           },
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       });
 
@@ -80,17 +86,46 @@ export default function RegisterPage() {
         return;
       }
 
-      toast.success("Kayıt başarılı!", {
-        description: "E-posta adresinize doğrulama linki gönderildi.",
+      if (!signUpData.user) {
+        toast.error("Kayıt başarısız", {
+          description: "Kullanıcı oluşturulamadı",
+        });
+        return;
+      }
+
+      // 2. Kendi doğrulama e-postamızı gönder
+      const verificationResponse = await fetch("/api/auth/send-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: data.email,
+          userId: signUpData.user.id,
+          fullName: data.fullName,
+        }),
       });
 
-      router.push("/auth/verify-email");
+      if (!verificationResponse.ok) {
+        const errorData = await verificationResponse.json();
+        console.error("Verification email error:", errorData);
+        // Kullanıcı oluşturuldu ama email gönderilemedi - yine de devam et
+        toast.warning("Kayıt başarılı!", {
+          description: "E-posta gönderilemedi. Verify sayfasından tekrar deneyebilirsiniz.",
+        });
+      } else {
+        toast.success("Kayıt başarılı!", {
+          description: "E-posta adresinize doğrulama linki gönderildi.",
+        });
+      }
+
+      // 3. Verify-email sayfasına yönlendir (email parametresi ile)
+      router.push(`/auth/verify-email?email=${encodeURIComponent(data.email)}`);
     } catch {
       toast.error("Bir hata oluştu", {
         description: "Lütfen tekrar deneyin",
       });
     } finally {
       setIsLoading(false);
+      isSubmittingRef.current = false;
     }
   }
 

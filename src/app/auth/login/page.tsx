@@ -53,6 +53,21 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
+      // Önce email doğrulama durumunu kontrol et
+      const checkResponse = await fetch(`/api/auth/check-verification?email=${encodeURIComponent(data.email)}`);
+      
+      if (checkResponse.ok) {
+        const checkData = await checkResponse.json();
+        
+        if (!checkData.verified) {
+          toast.error("E-posta doğrulanmamış", {
+            description: "Lütfen e-posta adresinizi doğrulayın.",
+          });
+          router.push(`/auth/verify-email?email=${encodeURIComponent(data.email)}`);
+          return;
+        }
+      }
+
       const { error } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: data.password,

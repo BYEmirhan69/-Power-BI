@@ -22,6 +22,64 @@ export type VersionedTableName = "datasets" | "charts" | "dashboards" | "data_so
 export interface Database {
   public: {
     Tables: {
+      email_verification_tokens: {
+        Row: {
+          id: string;
+          user_id: string;
+          token_hash: string;
+          email: string;
+          expires_at: string;
+          created_at: string;
+          used_at: string | null;
+          ip_address: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          token_hash: string;
+          email: string;
+          expires_at: string;
+          created_at?: string;
+          used_at?: string | null;
+          ip_address?: string | null;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          token_hash?: string;
+          email?: string;
+          expires_at?: string;
+          created_at?: string;
+          used_at?: string | null;
+          ip_address?: string | null;
+        };
+      };
+      verification_rate_limits: {
+        Row: {
+          id: string;
+          email: string;
+          attempts: number;
+          first_attempt_at: string;
+          last_attempt_at: string;
+          blocked_until: string | null;
+        };
+        Insert: {
+          id?: string;
+          email: string;
+          attempts?: number;
+          first_attempt_at?: string;
+          last_attempt_at?: string;
+          blocked_until?: string | null;
+        };
+        Update: {
+          id?: string;
+          email?: string;
+          attempts?: number;
+          first_attempt_at?: string;
+          last_attempt_at?: string;
+          blocked_until?: string | null;
+        };
+      };
       organizations: {
         Row: {
           id: string;
@@ -50,6 +108,8 @@ export interface Database {
           avatar_url: string | null;
           role: UserRole;
           organization_id: string | null;
+          email_verified: boolean;
+          email_verified_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -60,6 +120,8 @@ export interface Database {
           avatar_url?: string | null;
           role?: UserRole;
           organization_id?: string | null;
+          email_verified?: boolean;
+          email_verified_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -70,6 +132,8 @@ export interface Database {
           avatar_url?: string | null;
           role?: UserRole;
           organization_id?: string | null;
+          email_verified?: boolean;
+          email_verified_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
