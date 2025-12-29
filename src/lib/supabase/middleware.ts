@@ -49,6 +49,40 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // Onboarding sayfasına erişim - giriş yapmış kullanıcılar için izin ver
+  const isOnboardingRoute = request.nextUrl.pathname === "/dashboard/onboarding";
+  
+  // Dashboard sayfalarında organizasyon kontrolü
+  if (user && isProtectedRoute && !isOnboardingRoute) {
+    // Profili kontrol et - organizasyon yoksa onboarding'e yönlendir
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("organization_id")
+      .eq("id", user.id)
+      .single();
+    
+    if (!profile?.organization_id) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/dashboard/onboarding";
+      return NextResponse.redirect(url);
+    }
+  }
+  
+  // Onboarding'de olan ve org'u olan kullanıcıyı dashboard'a yönlendir
+  if (user && isOnboardingRoute) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("organization_id")
+      .eq("id", user.id)
+      .single();
+    
+    if (profile?.organization_id) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/dashboard";
+      return NextResponse.redirect(url);
+    }
+  }
+
   // Redirect logged-in users away from auth pages
   const authRoutes = ["/auth/login", "/auth/register"];
   const isAuthRoute = authRoutes.some(

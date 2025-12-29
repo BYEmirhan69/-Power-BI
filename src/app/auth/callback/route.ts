@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
@@ -8,8 +9,38 @@ export async function GET(request: Request) {
 
   if (code) {
     const supabase = await createClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) {
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+    
+    if (!error && data?.user) {
+      const adminClient = createAdminClient();
+      
+      // Kullanıcının profilini kontrol et ve güncelle
+      const { data: profile } = await adminClient
+        .from("profiles")
+        .select("id, email_verified, organization_id")
+        .eq("id", data.user.id)
+        .single();
+
+      if (profile) {
+        // Email doğrulandı olarak işaretle (Supabase callback'ten geldiği için)
+        if (!profile.email_verified) {
+          await adminClient
+            .from("profiles")
+            .update({
+              email_verified: true,
+              email_verified_at: new Date().toISOString(),
+            })
+            .eq("id", data.user.id);
+          
+          console.log(`Email verified for user ${data.user.id}`);
+        }
+      }
+      
+      // Organizasyon yoksa onboarding'e yönlendir
+      if (!profile?.organization_id) {
+        return NextResponse.redirect(`${origin}/dashboard/onboarding`);
+      }
+      
       return NextResponse.redirect(`${origin}${next}`);
     }
   }
