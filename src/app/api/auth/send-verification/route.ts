@@ -29,6 +29,43 @@ interface RateLimitData {
   blocked_until: string | null;
 }
 
+// Profil yoksa oluştur
+async function ensureProfile(
+  supabase: ReturnType<typeof createAdminClient>,
+  userId: string,
+  email: string,
+  fullName?: string
+): Promise<boolean> {
+  // Önce mevcut profili kontrol et
+  const { data: existingProfile } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("id", userId)
+    .single();
+
+  if (existingProfile) {
+    return true;
+  }
+
+  // Profil yoksa oluştur
+  const { error } = await supabase
+    .from("profiles")
+    .insert({
+      id: userId,
+      email: email.toLowerCase(),
+      full_name: fullName || null,
+      role: "user",
+      email_verified: false,
+    } as never);
+
+  if (error) {
+    console.error("Profil oluşturma hatası:", error);
+    return false;
+  }
+
+  return true;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -42,6 +79,9 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = createAdminClient();
+
+    // Profil yoksa oluştur
+    await ensureProfile(supabase, userId, email, fullName);
 
     // Rate limit kontrolü
     const { data: rateLimitRaw } = await supabase

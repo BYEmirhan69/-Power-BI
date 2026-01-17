@@ -5,6 +5,43 @@ import type { Database } from "@/types/database.types";
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 type Organization = Database["public"]["Tables"]["organizations"]["Row"];
 
+// Profil yoksa oluştur
+async function ensureProfile(
+  adminClient: ReturnType<typeof createAdminClient>,
+  user: { id: string; email?: string; user_metadata?: { full_name?: string } }
+): Promise<Pick<Profile, "id" | "organization_id"> | null> {
+  // Önce mevcut profili kontrol et
+  const { data: existingProfile } = await adminClient
+    .from("profiles")
+    .select("id, organization_id")
+    .eq("id", user.id)
+    .single();
+
+  if (existingProfile) {
+    return existingProfile as Pick<Profile, "id" | "organization_id">;
+  }
+
+  // Profil yoksa oluştur
+  const { data: newProfile, error } = await adminClient
+    .from("profiles")
+    .insert({
+      id: user.id,
+      email: user.email || "",
+      full_name: user.user_metadata?.full_name || null,
+      role: "user",
+      email_verified: false,
+    } as never)
+    .select("id, organization_id")
+    .single();
+
+  if (error) {
+    console.error("Profil oluşturma hatası:", error);
+    return null;
+  }
+
+  return newProfile as Pick<Profile, "id" | "organization_id">;
+}
+
 // Organizasyon oluştur
 export async function POST(request: Request) {
   try {
@@ -20,17 +57,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Yetkisiz erişim" }, { status: 401 });
     }
 
-    // Kullanıcının profilini kontrol et
-    const { data: profileData } = await adminClient
-      .from("profiles")
-      .select("id, organization_id")
-      .eq("id", user.id)
-      .single();
-    
-    const profile = profileData as Pick<Profile, "id" | "organization_id"> | null;
+    // Kullanıcının profilini kontrol et veya oluştur
+    const profile = await ensureProfile(adminClient, user);
 
     if (!profile) {
-      return NextResponse.json({ error: "Profil bulunamadı" }, { status: 404 });
+      return NextResponse.json({ error: "Profil oluşturulamadı" }, { status: 500 });
     }
 
     // Zaten organizasyonu varsa hata döndür

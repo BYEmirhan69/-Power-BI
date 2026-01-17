@@ -6,9 +6,18 @@ export async function updateSession(request: NextRequest) {
     request,
   });
 
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  // Supabase yapılandırması eksikse, middleware'i atla
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.warn("Supabase credentials not configured, skipping auth middleware");
+    return supabaseResponse;
+  }
+
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         getAll() {
@@ -29,19 +38,32 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // IMPORTANT: Avoid writing any logic between createServerClient and
-  // supabase.auth.getUser(). A simple mistake could make it very hard to debug
-  // issues with users being randomly logged out.
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
   // Protected routes
   const protectedRoutes = ["/dashboard", "/settings", "/reports"];
   const isProtectedRoute = protectedRoutes.some((route) =>
     request.nextUrl.pathname.startsWith(route)
   );
+
+  // Auth routes
+  const authRoutes = ["/auth/login", "/auth/register"];
+  const isAuthRoute = authRoutes.some(
+    (route) => request.nextUrl.pathname === route
+  );
+
+  // Eğer korumalı veya auth route değilse, erken çık
+  if (!isProtectedRoute && !isAuthRoute) {
+    return supabaseResponse;
+  }
+
+  // Sadece gerekli route'larda auth kontrolü yap
+  let user = null;
+  try {
+    const { data } = await supabase.auth.getUser();
+    user = data.user;
+  } catch (error) {
+    // Auth hatası durumunda sessizce devam et
+    console.error("Auth check failed:", error);
+  }
 
   if (isProtectedRoute && !user) {
     const url = request.nextUrl.clone();
@@ -52,61 +74,51 @@ export async function updateSession(request: NextRequest) {
   // Onboarding sayfasına erişim - giriş yapmış kullanıcılar için izin ver
   const isOnboardingRoute = request.nextUrl.pathname === "/dashboard/onboarding";
   
-  // Dashboard sayfalarında organizasyon kontrolü
+  // Dashboard sayfalarında organizasyon kontrolü (sadece user varsa)
   if (user && isProtectedRoute && !isOnboardingRoute) {
-    // Profili kontrol et - organizasyon yoksa onboarding'e yönlendir
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("organization_id")
-      .eq("id", user.id)
-      .single();
-    
-    if (!profile?.organization_id) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/dashboard/onboarding";
-      return NextResponse.redirect(url);
+    try {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("organization_id")
+        .eq("id", user.id)
+        .single();
+      
+      if (!profile?.organization_id) {
+        const url = request.nextUrl.clone();
+        url.pathname = "/dashboard/onboarding";
+        return NextResponse.redirect(url);
+      }
+    } catch (error) {
+      // Profile kontrolü başarısız olursa devam et
+      console.error("Profile check failed:", error);
     }
   }
   
   // Onboarding'de olan ve org'u olan kullanıcıyı dashboard'a yönlendir
   if (user && isOnboardingRoute) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("organization_id")
-      .eq("id", user.id)
-      .single();
-    
-    if (profile?.organization_id) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/dashboard";
-      return NextResponse.redirect(url);
+    try {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("organization_id")
+        .eq("id", user.id)
+        .single();
+      
+      if (profile?.organization_id) {
+        const url = request.nextUrl.clone();
+        url.pathname = "/dashboard";
+        return NextResponse.redirect(url);
+      }
+    } catch (error) {
+      console.error("Onboarding profile check failed:", error);
     }
   }
 
   // Redirect logged-in users away from auth pages
-  const authRoutes = ["/auth/login", "/auth/register"];
-  const isAuthRoute = authRoutes.some(
-    (route) => request.nextUrl.pathname === route
-  );
-
   if (isAuthRoute && user) {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
     return NextResponse.redirect(url);
   }
-
-  // IMPORTANT: You *must* return the supabaseResponse object as it is.
-  // If you're creating a new response object with NextResponse.next() make sure to:
-  // 1. Pass the request in it, like so:
-  //    const myNewResponse = NextResponse.next({ request })
-  // 2. Copy over the cookies, like so:
-  //    myNewResponse.cookies.setAll(supabaseResponse.cookies.getAll())
-  // 3. Change the myNewResponse object to fit your needs, but avoid changing
-  //    the cookies!
-  // 4. Finally:
-  //    return myNewResponse
-  // If this is not done, you may be causing the browser and server to go out
-  // of sync and terminate the user's session prematurely!
 
   return supabaseResponse;
 }
